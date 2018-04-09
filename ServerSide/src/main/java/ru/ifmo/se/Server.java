@@ -12,9 +12,7 @@ public class Server extends Thread {
     //Серверный модуль должен реализовывать все функции управления коллекцией
     //в интерактивном режиме, кроме отображения текста в соответствии с сюжетом предметной области.
     private static DatagramSocket serverSocket;
-    private static DatagramPacket packetFromClient;
-    private static BufferedReader fromClient;
-    private static final int sizeOfPacket = 256;
+    private static final int sizeOfPacket = 5000;
     protected static SortedSet<Person> collec = Collections.synchronizedSortedSet(new TreeSet<Person>());
 
     @Override
@@ -24,8 +22,8 @@ public class Server extends Thread {
             System.out.println(serverSocket.toString());
             System.out.println(serverSocket.getLocalPort());
             System.out.println("Server is now running.");
+            DatagramPacket fromClient = new DatagramPacket(new byte[sizeOfPacket], sizeOfPacket);
             while (true) {
-                DatagramPacket fromClient = new DatagramPacket(new byte[sizeOfPacket], sizeOfPacket);
                 serverSocket.receive(fromClient);
                 Connection connec = new Connection(serverSocket, fromClient);
             }
@@ -43,7 +41,8 @@ class Connection extends Thread {
     private DatagramSocket client;
     private DatagramPacket packet;
     private BufferedReader fromClient;
-    private ByteArrayOutputStream toClient;
+    private InetAddress address;
+    private int clientPort;
     private final static String filename = System.getenv("FILENAME");
     private final static String currentdir = System.getProperty("user.dir");
     private static String filepath;
@@ -53,9 +52,10 @@ class Connection extends Thread {
     Connection(DatagramSocket serverSocket, DatagramPacket packetFromClient){
         Connection.filemaker();
         this.packet = packetFromClient;
+        this.address = packetFromClient.getAddress();
+        this.clientPort = packetFromClient.getPort();
         this.client = serverSocket;
         fromClient = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(this.packet.getData())));
-        toClient = new ByteArrayOutputStream();
         this.start();
     }
 
@@ -73,17 +73,26 @@ class Connection extends Thread {
         } catch (IOException e) {
             System.out.println("Exception while trying to load collection.\n" + e.toString());
         }
-        System.out.println("Client " + packet.getSocketAddress()+ " " + packet.getPort()+ " has connected to server.");
+        System.out.println("Client " + address + " " + clientPort + " has connected to server.");
+        DatagramPacket packetFromClient = this.packet;
+        byte[] b = packetFromClient.getData();
+        System.out.println(b[0]);
+        ByteArrayInputStream byteStream = new ByteArrayInputStream(packetFromClient.getData());
+        Scanner sc = new Scanner(byteStream);
+        String command = sc.nextLine();
+        System.out.println("Command from client: " + command);
         try {
             client.send(this.createPacket("You've connected to the server.\n"));
         } catch (IOException e){
             System.out.println("Can not send packet.");
         }
-        DatagramPacket packetFromClient = new DatagramPacket(new byte[65507], 65507);
+
         while(true) {
             try {
                 client.receive(packetFromClient);
-                String command = fromClient.readLine();
+                byteStream = new ByteArrayInputStream(packetFromClient.getData());
+                sc = new Scanner(byteStream);
+                command = sc.nextLine();
                 System.out.println("Command from client: " + command);
                 try {
                     switch (command) {
@@ -112,6 +121,7 @@ class Connection extends Thread {
                                     "\nremove_greater {element} - remove elements greater than given;\n" +
                                     "show - show the collection;\nquit - quit;\n"));
                     }
+                    byteStream.close();
                 }catch (NullPointerException e){
                     System.out.println("Null command received.");
                 }
@@ -120,7 +130,6 @@ class Connection extends Thread {
                 System.out.println(e.toString());
                 try {
                     fromClient.close();
-                    toClient.close();
                     client.close();
                 } catch (IOException ee){
                     System.out.println("Exception while trying to close client's streams.");
@@ -131,15 +140,15 @@ class Connection extends Thread {
     }
 
     private DatagramPacket createPacket(String string){
+        ByteArrayOutputStream toClient = new ByteArrayOutputStream();
         try {
             toClient.write(string.getBytes());
-            packet.setData(toClient.toByteArray());
-            packet.setLength(toClient.size());
-            packet.setPort(packet.getPort());
+            toClient.close();
         } catch (IOException e){
             System.out.println("Can not create packet.");
         }
-        return packet;
+        DatagramPacket datagramPacket = new DatagramPacket(toClient.toByteArray(), toClient.size(), address, clientPort);
+        return datagramPacket;
     }
 
     private void load() throws IOException {
@@ -182,37 +191,25 @@ class Connection extends Thread {
 
     private void getCollection() throws IOException{
         locker.lock();
-        final ObjectInputStream fromClient;
-        try{
-            fromClient = new ObjectInputStream(new ByteArrayInputStream(this.packet.getData()));
-        } catch (IOException e){
-            System.out.println("Can not create ObjectInputStream: "+e.toString());
-            System.out.println("Just try again, that's pretty normal.");
-            client.send(this.createPacket("Can not create ObjectInputStream on server side: "+e.toString()));
-            client.send(this.createPacket("Just try again, that's pretty normal."));
-            return;
-        }
-        Person person;
-        try{
-            while ((person = (Person)fromClient.readObject()) != null){
+        try {
+            DatagramPacket packet = new DatagramPacket(new byte[10000], 10000);
+            client.receive(packet);
+            ByteArrayInputStream byteStream = new ByteArrayInputStream(packet.getData());
+            ObjectInputStream objectInputStream = new ObjectInputStream(new BufferedInputStream(byteStream));
+            Person person;
+            while ((person = (Person) objectInputStream.readObject()) != null) {
                 Server.collec.add(person);
             }
             client.send(this.createPacket("Collection has been saved on server.\n"));
-        } catch (IOException e) {
-            client.send(this.createPacket("Collection has been saved on server.\n"));
-            // выход из цикла через исключение(да, я в курсе, что это нехоршо наверное, хз как по-другому)
-            //e.printStackTrace();
-        } catch (ClassNotFoundException e){
-            System.out.println("Class not found while deserializing.");
-        } finally {
-            System.out.println("Collection has been updated by client.");
-            locker.unlock();
+            byteStream.close();
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
         }
+        locker.unlock();
     }
 
     private void quit() throws IOException {
         fromClient.close();
-        toClient.close();
         client.close();
         System.out.println("Client has disconnected.");
     }
@@ -254,21 +251,20 @@ class Connection extends Thread {
 
     private void giveCollection(){
         locker.lock();
-        ObjectOutputStream toClient;
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream(10000);
         try {
-            toClient = new ObjectOutputStream(this.toClient);
-        } catch (IOException e){
-            System.out.println("Can not create ObjectOutputStream.");
-            return;
-        }
-        try {
-            //Server.collec.forEach(person -> toClient.writeObject(person));
-            for (Person person: Server.collec){
-                toClient.writeObject(person);
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(new BufferedOutputStream(byteStream));
+            for (Person person : Server.collec) {
+                objectOutputStream.writeObject(person);
             }
             client.send(this.createPacket(" Collection copy has been loaded on client.\n"));
-        } catch (IOException e){
-            System.out.println("Can not write collection into stream.");
+            byte[] bytes = byteStream.toByteArray();
+            DatagramPacket packet = new DatagramPacket(bytes, bytes.length, address, clientPort);
+            client.send(packet);
+            byteStream.close();
+        } catch (IOException e) {
+            System.out.println("Can not send collection to server.");
+            e.printStackTrace();
         }
         locker.unlock();
     }
