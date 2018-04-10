@@ -27,22 +27,11 @@ public class ClientApp {
             channel = DatagramChannel.open();
             address = InetAddress.getByName("localhost");
             socket = channel.socket();
-            this.sendPacket("whatever, just work bitch");
-            this.gettingResponse();
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        /*try {
-            socket.receive(packetFromServer);
-            System.out.println(new ByteArrayInputStream(packetFromServer.getData()));
-        } catch (IOException e) {
-            System.out.println("sdfghj");
-        }*/
-        /*this.sendPacket("data_request");
-        this.clear();
+        this.sendPacket("data_request");
         this.load();
-        this.gettingResponse();*/
         sc = new Scanner(System.in);
         String command;
         String input;
@@ -167,26 +156,26 @@ public class ClientApp {
             while ((person = (Person) objectInputStream.readObject()) != null) {
                 this.collec.add(person);
             }
-            byteStream.close();
+            objectInputStream.close();
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
     }
 
     private void giveCollection(){
-        ByteArrayOutputStream byteStream = new ByteArrayOutputStream(10000);
         try {
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(new BufferedOutputStream(byteStream));
+            ByteArrayOutputStream byteStream = new ByteArrayOutputStream(5000);
+            ObjectOutputStream objectInputStream = new ObjectOutputStream(new BufferedOutputStream(byteStream));
+            byteStream.flush();
             for (Person person : this.collec) {
-                objectOutputStream.writeObject(person);
+                objectInputStream.writeObject(person);
             }
-
             byte[] bytes = byteStream.toByteArray();
             DatagramPacket packet = new DatagramPacket(bytes, bytes.length, address, serverPort);
             socket.send(packet);
-            this.sendPacket(" Collection copy has been loaded on client.\n");
             byteStream.close();
-        } catch (IOException e) {
+            System.out.println("Collection has been sent to server.");
+        }catch (IOException e) {
             System.out.println("Can not send collection to server.");
             e.printStackTrace();
         }
@@ -216,11 +205,11 @@ public class ClientApp {
     }
 
     private void gettingResponse(){
-        DatagramPacket fromServer = new DatagramPacket(new byte[65507], 65507);
+        DatagramPacket datagramPacket = new DatagramPacket(new byte[65507], 65507);
         ByteArrayInputStream byteArrayInputStream;
         try{
-            socket.receive(fromServer);
-            byteArrayInputStream = new ByteArrayInputStream(fromServer.getData());
+            socket.receive(datagramPacket);
+            byteArrayInputStream = new ByteArrayInputStream(datagramPacket.getData());
             Scanner sc = new Scanner(new InputStreamReader(byteArrayInputStream));
             sc.useDelimiter("\n");
             while (sc.hasNext()) {
