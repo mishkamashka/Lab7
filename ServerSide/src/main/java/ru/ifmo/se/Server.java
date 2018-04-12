@@ -42,7 +42,6 @@ public class Server extends Thread {
 class Connection extends Thread {
     private DatagramSocket client;
     private DatagramPacket packet;
-    private BufferedReader fromClient;
     private InetAddress address;
     private int clientPort;
     private final static String filename = System.getenv("FILENAME");
@@ -74,7 +73,6 @@ class Connection extends Thread {
             System.out.println("Exception while trying to load collection.\n" + e.toString());
         }
         ByteArrayInputStream byteStream = new ByteArrayInputStream(packet.getData());
-        //Scanner sc = new Scanner(byteStream);
         int command = byteStream.read();
         System.out.print("Command from client:");
         try {
@@ -117,12 +115,7 @@ class Connection extends Thread {
         } catch (IOException e) {
             System.out.println("Connection with the client is lost.");
             System.out.println(e.toString());
-            try {
-                fromClient.close();
-                client.close();
-            } catch (IOException ee) {
-                System.out.println("Exception while trying to close client's streams.");
-            }
+            client.close();
         }
     }
 
@@ -183,12 +176,15 @@ class Connection extends Thread {
             DatagramPacket packet = new DatagramPacket(new byte[10000], 10000);
             client.receive(packet);
             ByteArrayInputStream byteStream = new ByteArrayInputStream(packet.getData());
-            ObjectInputStream objectInputStream = new ObjectInputStream(new BufferedInputStream(byteStream));
+            ObjectInputStream objectInputStream = new ObjectInputStream(byteStream);
             Person person;
-            while ((person = (Person) objectInputStream.readObject()) != null) {
-                Server.collec.add(person);
+            try {
+                while ((person = (Person) objectInputStream.readObject()) != null) {
+                    Server.collec.add(person);
+                }
+            } catch (StreamCorruptedException e){
+                System.out.println("Collection has been loaded on server from client " + clientPort + ".");
             }
-            client.send(this.createPacket("Collection has been saved on server.\n"));
             byteStream.close();
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
@@ -197,7 +193,6 @@ class Connection extends Thread {
     }
 
     private void quit() throws IOException {
-        fromClient.close();
         client.close();
         System.out.println("Client has disconnected.");
     }
@@ -212,7 +207,7 @@ class Connection extends Thread {
                 writer.write(JsonConverter.objectToJson(person));
             }
             writer.close();
-            System.out.println("Collection has been saved.");
+            System.out.println("Collection has been saved to file.");
             client.send(this.createPacket("Collection has been saved to file.\n"));
         } catch (IOException e) {
             System.out.println("Collection can not be saved.\nFile "+filename+" is not accessible: it does not exist or permission denied.");
@@ -230,7 +225,7 @@ class Connection extends Thread {
                 writer.write(JsonConverter.objectToJson(person));
             }
             writer.close();
-            System.out.println("Collection has been saved.");
+            System.out.println("Collection has been saved to file.");
         } catch (IOException e) {
             System.out.println("Collection can not be saved.\nFile "+filename+" is not accessible: it does not exist or permission denied.");
             e.printStackTrace();
@@ -239,19 +234,19 @@ class Connection extends Thread {
 
     private void giveCollection(){
         locker.lock();
-        ByteArrayOutputStream byteStream = new ByteArrayOutputStream(10000);
-        StringBuilder stringBuilder = new StringBuilder();
         try {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
             for (Person person : Server.collec) {
-                stringBuilder.append(JsonConverter.objectToJson(person));
+                objectOutputStream.writeObject(person);
             }
-            //client.send(this.createPacket(" Collection copy has been loaded on client.\n"));
-            byte[] bytes = stringBuilder.toString().getBytes();
-            byteStream.close();
+            byte[] bytes = byteArrayOutputStream.toByteArray();
             DatagramPacket packet = new DatagramPacket(bytes, bytes.length, address, clientPort);
+            byteArrayOutputStream.close();
             client.send(packet);
+            System.out.println("Collection has been sent to client.");
         } catch (IOException e) {
-            System.out.println("Can not send collection to server.");
+            System.out.println("Can not send collection to client.");
             e.printStackTrace();
         }
         locker.unlock();

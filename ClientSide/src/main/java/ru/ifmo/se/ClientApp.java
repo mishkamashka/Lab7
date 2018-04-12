@@ -50,7 +50,6 @@ public class ClientApp {
                     this.sendPacket((byte)1);
                     this.clear();
                     this.load();
-                    this.gettingResponse();
                     break;
                 case "show":
                     this.show();
@@ -77,14 +76,13 @@ public class ClientApp {
                     this.help();
                     break;
                 case "save":
-                    this.sendPacket((byte)2);
+                    //this.sendPacket((byte)2);
                     this.giveCollection();
-                    //this.gettingResponse();
+                    this.gettingResponse();
                     break;
                 case "qw":
                     this.sendPacket((byte)3);
                     this.giveCollection();
-                    this.gettingResponse();
                     this.quit();
                     break;
                 case "q":
@@ -117,13 +115,15 @@ public class ClientApp {
         try {
             DatagramPacket packet = new DatagramPacket(new byte[10000], 10000);
             socket.receive(packet);
-            byte[] bytes = packet.getData();
-            String string = new String(bytes, StandardCharsets.UTF_8);
             ByteArrayInputStream byteStream = new ByteArrayInputStream(packet.getData());
-            ObjectInputStream objectInputStream = new ObjectInputStream(new BufferedInputStream(byteStream));
+            ObjectInputStream objectInputStream = new ObjectInputStream(byteStream);
             Person person;
-            while ((person = (Person) objectInputStream.readObject()) != null) {
-                this.collec.add(person);
+            try {
+                while ((person = (Person) objectInputStream.readObject()) != null) {
+                    this.collec.add(person);
+                }
+            } catch (StreamCorruptedException e){
+                System.out.println("Collection has been loaded on client.");
             }
             byteStream.close();
         } catch (IOException | ClassNotFoundException e) {
@@ -133,18 +133,17 @@ public class ClientApp {
 
     private void giveCollection(){
         try {
-            ByteArrayOutputStream byteStream = new ByteArrayOutputStream(5000);
-            ObjectOutputStream objectInputStream = new ObjectOutputStream(new BufferedOutputStream(byteStream));
-            byteStream.flush();
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
             for (Person person : this.collec) {
-                objectInputStream.writeObject(person);
+                objectOutputStream.writeObject(person);
             }
-            byte[] bytes = byteStream.toByteArray();
+            byte[] bytes = byteArrayOutputStream.toByteArray();
             DatagramPacket packet = new DatagramPacket(bytes, bytes.length, address, serverPort);
+            byteArrayOutputStream.close();
             socket.send(packet);
-            byteStream.close();
             System.out.println("Collection has been sent to server.");
-        }catch (IOException e) {
+        } catch (IOException e) {
             System.out.println("Can not send collection to server.");
             e.printStackTrace();
         }
