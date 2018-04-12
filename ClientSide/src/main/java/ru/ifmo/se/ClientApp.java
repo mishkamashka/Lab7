@@ -1,6 +1,7 @@
 package ru.ifmo.se;
 
 import com.google.gson.JsonSyntaxException;
+import com.sun.xml.internal.bind.api.impl.NameConverter;
 import com.sun.xml.internal.messaging.saaj.util.ByteInputStream;
 
 import java.io.*;
@@ -8,6 +9,7 @@ import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeSet;
@@ -150,13 +152,15 @@ public class ClientApp {
         try {
             DatagramPacket packet = new DatagramPacket(new byte[10000], 10000);
             socket.receive(packet);
+            byte[] bytes = packet.getData();
+            String string = new String(bytes, StandardCharsets.UTF_8);
             ByteArrayInputStream byteStream = new ByteArrayInputStream(packet.getData());
             ObjectInputStream objectInputStream = new ObjectInputStream(new BufferedInputStream(byteStream));
             Person person;
             while ((person = (Person) objectInputStream.readObject()) != null) {
                 this.collec.add(person);
             }
-            objectInputStream.close();
+            byteStream.close();
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }

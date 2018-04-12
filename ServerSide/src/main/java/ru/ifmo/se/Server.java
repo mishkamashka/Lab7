@@ -81,9 +81,15 @@ class Connection extends Thread {
         Scanner sc = new Scanner(byteStream);
         String command = sc.nextLine();
         System.out.println("Command from client: " + command + " client: " + clientPort);
+        System.out.println(command);
+        System.out.println("data_request");
+        System.out.println(command.equals("data_request"));
+        System.out.println("data_request".equals("data_request"));
+        System.out.println(command.compareTo("data_request"));
         try {
             switch (command) {
                 case "data_request":
+                    System.out.println("DataRequest");
                     this.giveCollection();
                     break;
                 case "save":
@@ -126,6 +132,7 @@ class Connection extends Thread {
     private DatagramPacket createPacket(String string){
         ByteArrayOutputStream toClient = new ByteArrayOutputStream();
         try {
+            toClient.flush();
             toClient.write(string.getBytes());
             toClient.close();
         } catch (IOException e){
@@ -235,18 +242,17 @@ class Connection extends Thread {
 
     private void giveCollection(){
         locker.lock();
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream(10000);
+        StringBuilder stringBuilder = new StringBuilder();
         try {
-            ByteArrayOutputStream byteStream = new ByteArrayOutputStream(5000);
-            ObjectOutputStream objectInputStream = new ObjectOutputStream(new BufferedOutputStream(byteStream));
-            byteStream.flush();
             for (Person person : Server.collec) {
-                objectInputStream.writeObject(person);
+                stringBuilder.append(JsonConverter.objectToJson(person));
             }
-            byte[] bytes = byteStream.toByteArray();
+            //client.send(this.createPacket(" Collection copy has been loaded on client.\n"));
+            byte[] bytes = stringBuilder.toString().getBytes();
             DatagramPacket packet = new DatagramPacket(bytes, bytes.length, address, clientPort);
             client.send(packet);
             byteStream.close();
-            System.out.println("Collection has been sent to server.");
         } catch (IOException e) {
             System.out.println("Can not send collection to server.");
             e.printStackTrace();
