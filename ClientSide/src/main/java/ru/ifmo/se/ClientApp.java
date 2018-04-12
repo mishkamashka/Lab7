@@ -32,7 +32,7 @@ public class ClientApp {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        this.sendPacket("data_request");
+        this.sendPacket(1);
         this.load();
         sc = new Scanner(System.in);
         String command;
@@ -47,7 +47,7 @@ public class ClientApp {
                 data = buf[1];
             switch (command) {
                 case "load":
-                    this.sendPacket("data_request");
+                    this.sendPacket(1);
                     this.clear();
                     this.load();
                     this.gettingResponse();
@@ -67,36 +67,42 @@ public class ClientApp {
                 case "clear":
                     this.clear();
                     break;
+                case "load_file":
+                    this.sendPacket(5);
+                    break;
+                case "save_file":
+                    this.sendPacket(6);
+                    break;
                 case "help":
                     this.help();
                     break;
                 case "save":
-                    this.sendPacket(command);
+                    this.sendPacket(2);
                     this.giveCollection();
                     //this.gettingResponse();
                     break;
                 case "qw":
-                    this.sendPacket(command);
+                    this.sendPacket(3);
                     this.giveCollection();
                     this.gettingResponse();
                     this.quit();
                     break;
                 case "q":
-                    this.sendPacket(command);
+                    this.sendPacket(4);
                     this.quit();
                     break;
                 default:
-                    this.sendPacket(command);
+                    this.sendPacket(10);
                     this.gettingResponse();
             }
         }
     }
 
-    private void sendPacket(String string){
+    private void sendPacket(int string){
         DatagramPacket datagramPacket;
         try {
             ByteArrayOutputStream toServer = new ByteArrayOutputStream();
-            toServer.write(string.getBytes());
+            toServer.write(string);
             toServer.close();
             datagramPacket = new DatagramPacket(toServer.toByteArray(), toServer.size(), address, serverPort);
             socket.send(datagramPacket);
@@ -104,49 +110,6 @@ public class ClientApp {
             System.out.println("Can not create packet.");
         }
     }
-
-    /*private void connect(){
-        try {
-            //channel = DatagramChannel.open();
-            socket = new DatagramSocket();
-            //clientSocketAddress = new InetSocketAddress(4718);
-            //channel.bind(clientSocketAddress);
-            //socket = channel.socket();
-
-        } catch (IOException e){
-            e.printStackTrace();
-        }
-        int i = 0;
-        while (channel == null) {
-            try {
-                Thread.sleep(1000);
-                channel = DatagramChannel.open();
-                clientSocketAddress = new InetSocketAddress(4718);
-                DatagramSocket socket = channel.socket();
-                socket.bind(clientSocketAddress);
-            } catch (IOException e) {
-                if (i++ == 3){
-                    System.out.println("Server is not responding for a long time...");
-                }
-                if (i == 10){
-                    System.out.println("Server did not respond for too long. Try again later.");
-                    System.exit(0);
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        try {
-            packet = new DatagramPacket(new byte[sizeOfPacket], sizeOfPacket);
-            channel.socket().receive(packet);
-            fromServer = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(packet.getData())));
-        } catch (IOException e){
-            System.out.println("Can not create DataInput or DataOutput stream.");
-            e.printStackTrace();
-        }
-        this.gettingResponse();
-    }*/
 
     private void load() {
         try {

@@ -26,8 +26,6 @@ public class Server extends Thread {
                 DatagramPacket fromClient = new DatagramPacket(new byte[sizeOfPacket], sizeOfPacket);
                 serverSocket.receive(fromClient);
                 new Thread(new Connection(serverSocket, fromClient)).start();
-                //Connection connec = new Connection(serverSocket, fromClient);
-                //connec.start();
             }
         } catch (UnknownHostException | SocketException e){
             System.out.println("Server is not listening.");
@@ -59,8 +57,6 @@ class Connection extends Thread {
         this.address = packetFromClient.getAddress();
         this.clientPort = packetFromClient.getPort();
         this.client = serverSocket;
-        //this.start();
-        //fromClient = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(this.packet.getData())));
     }
 
     private static void filemaker(){
@@ -78,34 +74,30 @@ class Connection extends Thread {
             System.out.println("Exception while trying to load collection.\n" + e.toString());
         }
         ByteArrayInputStream byteStream = new ByteArrayInputStream(packet.getData());
+        DataInputStream
         Scanner sc = new Scanner(byteStream);
-        String command = sc.nextLine();
+        int command = sc.nextInt();
         System.out.println("Command from client: " + command + " client: " + clientPort);
-        System.out.println(command);
-        System.out.println("data_request");
-        System.out.println(command.equals("data_request"));
-        System.out.println("data_request".equals("data_request"));
-        System.out.println(command.compareTo("data_request"));
         try {
             switch (command) {
-                case "data_request":
+                case 1: //data_request
                     System.out.println("DataRequest");
                     this.giveCollection();
                     break;
-                case "save":
+                case 2: //save
                     this.clear();
                     this.getCollection();
                     break;
-                case "qw":
+                case 3: //qw
                     this.getCollection();
-                case "q":
+                case 4: //q
                     this.quit();
                     break;
-                case "load_file":
+                case 5: //load_file
                     this.load();
                     client.send(this.createPacket("\n"));
                     break;
-                case "save_file":
+                case 6: //save_file
                     this.save();
                     break;
                 default:
