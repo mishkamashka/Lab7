@@ -1,5 +1,6 @@
 package ru.ifmo.se;
 
+import com.sun.xml.internal.ws.developer.Serialization;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -13,6 +14,7 @@ public class Server extends Thread {
     //в интерактивном режиме, кроме отображения текста в соответствии с сюжетом предметной области.
     private static DatagramSocket serverSocket;
     private static final int sizeOfPacket = 5000;
+    static boolean isCollection = false;
     protected static SortedSet<Person> collec = Collections.synchronizedSortedSet(new TreeSet<Person>());
 
     @Override
@@ -25,7 +27,7 @@ public class Server extends Thread {
             while (true) {
                 DatagramPacket fromClient = new DatagramPacket(new byte[sizeOfPacket], sizeOfPacket);
                 serverSocket.receive(fromClient);
-                new Thread(new Connection(serverSocket, fromClient)).start();
+                new Thread(new Connection(serverSocket, fromClient, isCollection)).start();
             }
         } catch (UnknownHostException | SocketException e){
             System.out.println("Server is not listening.");
@@ -44,18 +46,20 @@ class Connection extends Thread {
     private DatagramPacket packet;
     private InetAddress address;
     private int clientPort;
+    private boolean isCollection;
     private final static String filename = System.getenv("FILENAME");
     private final static String currentdir = System.getProperty("user.dir");
     private static String filepath;
     private static File file;
     private ReentrantLock locker = new ReentrantLock();
 
-    Connection(DatagramSocket serverSocket, DatagramPacket packetFromClient){
+    Connection(DatagramSocket serverSocket, DatagramPacket packetFromClient, boolean isCollection){
         Connection.filemaker();
         this.packet = packetFromClient;
         this.address = packetFromClient.getAddress();
         this.clientPort = packetFromClient.getPort();
         this.client = serverSocket;
+        this.isCollection = isCollection;
     }
 
     private static void filemaker(){
@@ -67,11 +71,24 @@ class Connection extends Thread {
     }
 
     public void run(){
+        locker.lock();
         try {
             this.load();
         } catch (IOException e) {
             System.out.println("Exception while trying to load collection.\n" + e.toString());
         }
+
+        if (isCollection) {
+            try {
+                this.clear();
+                this.getCollection();
+                Server.isCollection = false;
+            } catch (IOException e){
+                e.printStackTrace();
+            }
+            return;
+        }
+
         ByteArrayInputStream byteStream = new ByteArrayInputStream(packet.getData());
         int command = byteStream.read();
         System.out.print("Command from client:");
@@ -83,12 +100,11 @@ class Connection extends Thread {
                     break;
                 case 2: //save
                     System.out.println(" save, client: " + clientPort);
-                    this.clear();
-                    this.getCollection();
+                    Server.isCollection = true;
                     break;
-                case 3: //qw
+                /*case 3: //qw
                     System.out.println(" qw, client: " + clientPort);
-                    this.getCollection();
+                    this.getCollection();*/
                 case 4: //q
                     System.out.println(" q, client: " + clientPort);
                     this.quit();
@@ -117,6 +133,7 @@ class Connection extends Thread {
             System.out.println(e.toString());
             client.close();
         }
+        locker.unlock();
     }
 
     private DatagramPacket createPacket(String string){
@@ -171,10 +188,7 @@ class Connection extends Thread {
     }
 
     private void getCollection() throws IOException{
-        locker.lock();
         try {
-            DatagramPacket packet = new DatagramPacket(new byte[10000], 10000);
-            client.receive(packet);
             ByteArrayInputStream byteStream = new ByteArrayInputStream(packet.getData());
             ObjectInputStream objectInputStream = new ObjectInputStream(byteStream);
             Person person;
@@ -182,6 +196,7 @@ class Connection extends Thread {
                 while ((person = (Person) objectInputStream.readObject()) != null) {
                     Server.collec.add(person);
                 }
+                System.out.println("Collection has been loaded on server from client " + clientPort + ".");
             } catch (StreamCorruptedException e){
                 System.out.println("Collection has been loaded on server from client " + clientPort + ".");
             }
@@ -189,12 +204,10 @@ class Connection extends Thread {
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
-        locker.unlock();
     }
 
     private void quit() throws IOException {
-        client.close();
-        System.out.println("Client has disconnected.");
+        System.out.println("Client " + clientPort + " has disconnected.");
     }
 
     private void save(){

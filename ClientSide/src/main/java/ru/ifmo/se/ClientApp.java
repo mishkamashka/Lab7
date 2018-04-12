@@ -76,15 +76,19 @@ public class ClientApp {
                     this.help();
                     break;
                 case "save":
-                    //this.sendPacket((byte)2);
+                    this.sendPacket((byte)2);
+                    try{
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e){
+                        e.printStackTrace();
+                    }
                     this.giveCollection();
-                    this.gettingResponse();
                     break;
-                case "qw":
+                /*case "qw":
                     this.sendPacket((byte)3);
                     this.giveCollection();
                     this.quit();
-                    break;
+                    break;*/
                 case "q":
                     this.sendPacket((byte)4);
                     this.quit();
