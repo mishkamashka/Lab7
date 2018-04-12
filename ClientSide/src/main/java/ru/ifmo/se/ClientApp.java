@@ -32,7 +32,7 @@ public class ClientApp {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        this.sendPacket(1);
+        this.sendPacket((byte)1);
         this.load();
         sc = new Scanner(System.in);
         String command;
@@ -47,7 +47,7 @@ public class ClientApp {
                 data = buf[1];
             switch (command) {
                 case "load":
-                    this.sendPacket(1);
+                    this.sendPacket((byte)1);
                     this.clear();
                     this.load();
                     this.gettingResponse();
@@ -68,41 +68,43 @@ public class ClientApp {
                     this.clear();
                     break;
                 case "load_file":
-                    this.sendPacket(5);
+                    this.sendPacket((byte)5);
                     break;
                 case "save_file":
-                    this.sendPacket(6);
+                    this.sendPacket((byte)6);
                     break;
                 case "help":
                     this.help();
                     break;
                 case "save":
-                    this.sendPacket(2);
+                    this.sendPacket((byte)2);
                     this.giveCollection();
                     //this.gettingResponse();
                     break;
                 case "qw":
-                    this.sendPacket(3);
+                    this.sendPacket((byte)3);
                     this.giveCollection();
                     this.gettingResponse();
                     this.quit();
                     break;
                 case "q":
-                    this.sendPacket(4);
+                    this.sendPacket((byte)4);
                     this.quit();
                     break;
                 default:
-                    this.sendPacket(10);
+                    this.sendPacket((byte)10);
                     this.gettingResponse();
             }
         }
     }
 
-    private void sendPacket(int string){
+    private void sendPacket(byte buf){
         DatagramPacket datagramPacket;
         try {
+            byte[] bytes = new byte[1];
+            bytes[0] = buf;
             ByteArrayOutputStream toServer = new ByteArrayOutputStream();
-            toServer.write(string);
+            toServer.write(buf);
             toServer.close();
             datagramPacket = new DatagramPacket(toServer.toByteArray(), toServer.size(), address, serverPort);
             socket.send(datagramPacket);

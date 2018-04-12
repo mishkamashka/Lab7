@@ -74,33 +74,38 @@ class Connection extends Thread {
             System.out.println("Exception while trying to load collection.\n" + e.toString());
         }
         ByteArrayInputStream byteStream = new ByteArrayInputStream(packet.getData());
-        DataInputStream
-        Scanner sc = new Scanner(byteStream);
-        int command = sc.nextInt();
-        System.out.println("Command from client: " + command + " client: " + clientPort);
+        //Scanner sc = new Scanner(byteStream);
+        int command = byteStream.read();
+        System.out.print("Command from client:");
         try {
             switch (command) {
                 case 1: //data_request
-                    System.out.println("DataRequest");
+                    System.out.println(" data_request, client: " + clientPort);
                     this.giveCollection();
                     break;
                 case 2: //save
+                    System.out.println(" save, client: " + clientPort);
                     this.clear();
                     this.getCollection();
                     break;
                 case 3: //qw
+                    System.out.println(" qw, client: " + clientPort);
                     this.getCollection();
                 case 4: //q
+                    System.out.println(" q, client: " + clientPort);
                     this.quit();
                     break;
                 case 5: //load_file
+                    System.out.println(" load_file, client: " + clientPort);
                     this.load();
                     client.send(this.createPacket("\n"));
                     break;
                 case 6: //save_file
+                    System.out.println(" save_file, client: " + clientPort);
                     this.save();
                     break;
                 default:
+                    System.out.println(" unknown, client: " + clientPort);
                     client.send(this.createPacket("Not valid command. Try one of those:\nhelp - get help;\nclear - clear the collection;" +
                             "\nload - load the collection again;\nadd {element} - add new element to collection;" +
                             "\nremove_greater {element} - remove elements greater than given;\n" +
@@ -242,9 +247,9 @@ class Connection extends Thread {
             }
             //client.send(this.createPacket(" Collection copy has been loaded on client.\n"));
             byte[] bytes = stringBuilder.toString().getBytes();
+            byteStream.close();
             DatagramPacket packet = new DatagramPacket(bytes, bytes.length, address, clientPort);
             client.send(packet);
-            byteStream.close();
         } catch (IOException e) {
             System.out.println("Can not send collection to server.");
             e.printStackTrace();
