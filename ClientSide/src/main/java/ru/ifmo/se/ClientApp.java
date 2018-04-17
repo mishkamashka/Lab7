@@ -165,11 +165,6 @@ public class ClientApp {
                 toServer.writeObject(person);
             }
             outputStream.write(64);
-            /*try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e){
-                e.printStackTrace();
-            }*/
             System.out.println("Collection has been sent to server.");
         } catch (IOException e){
             System.out.println("Can not write collection into stream.");

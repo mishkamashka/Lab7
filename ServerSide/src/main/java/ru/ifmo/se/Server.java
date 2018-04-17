@@ -43,7 +43,7 @@ class Connection extends Thread {
     private final static String currentdir = System.getProperty("user.dir");
     private static String filepath;
     private static File file;
-    private ReentrantLock locker = new ReentrantLock();
+    private static ReentrantLock locker = new ReentrantLock();
 
     Connection(Socket client){
         Connection.filemaker();
@@ -63,7 +63,7 @@ class Connection extends Thread {
         this.start();
     }
 
-    private static void filemaker(){
+    public static void filemaker(){
         if (currentdir.startsWith("/")) {
             filepath = currentdir + "/" + filename;
         } else
@@ -128,7 +128,7 @@ class Connection extends Thread {
         }
     }
 
-    private void load() throws IOException {
+    public static void load() throws IOException {
         locker.lock();
         try (Scanner sc = new Scanner(file)) {
             StringBuilder tempString = new StringBuilder();
@@ -149,16 +149,16 @@ class Connection extends Thread {
                 }
                 System.out.println("Connection has been loaded.");
             } catch (NullPointerException e) {
-                toClient.println("File is empty.");
+                System.out.println("File is empty.");
             }
         } catch (FileNotFoundException e) {
-            toClient.println("Collection can not be loaded.\nFile "+filename+" is not accessible: it does not exist or permission denied.");
+            System.out.println("Collection can not be loaded.\nFile "+filename+" is not accessible: it does not exist or permission denied.");
             e.printStackTrace();
         }
         locker.unlock();
     }
 
-    private void getCollection(){
+    public void getCollection(){
         locker.lock();
         final ObjectInputStream fromClient;
         try{
@@ -185,14 +185,14 @@ class Connection extends Thread {
         locker.unlock();
     }
 
-    private void quit() throws IOException {
+    public void quit() throws IOException {
         fromClient.close();
         toClient.close();
         client.close();
         System.out.println("Client has disconnected.");
     }
 
-    private void save(){
+    public void save(){
         locker.lock();
         try {
             Writer writer = new FileWriter(file);
@@ -227,7 +227,7 @@ class Connection extends Thread {
         }
     }
 
-    private void giveCollection(){
+    public void giveCollection(){
         locker.lock();
         ObjectOutputStream toClient;
         try {
@@ -248,7 +248,7 @@ class Connection extends Thread {
         locker.unlock();
     }
 
-    private void showCollection() {
+    public void showCollection() {
         if (Server.collec.isEmpty())
             System.out.println("Collection is empty.");
         for (Person person : Server.collec) {
@@ -256,7 +256,7 @@ class Connection extends Thread {
         }
     }
 
-    private void clear() {
+    public static void clear() {
         Server.collec.clear();
     }
 }
