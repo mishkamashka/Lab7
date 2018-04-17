@@ -1,39 +1,33 @@
 package ru.ifmo.se;
 
 import com.google.gson.JsonSyntaxException;
-import com.sun.xml.internal.bind.api.impl.NameConverter;
-import com.sun.xml.internal.messaging.saaj.util.ByteInputStream;
 
+import javax.xml.crypto.Data;
 import java.io.*;
 import java.net.*;
-import java.nio.ByteBuffer;
-import java.nio.channels.DatagramChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class ClientApp {
     //Клиентский модуль должен запрашивать у сервера текущее состояние коллекции,
     //генерировать сюжет, выводить его на консоль и завершать работу.
     Set<Person> collec = new TreeSet<>();
-    private DatagramChannel channel = null;
-    private DatagramSocket socket;
-    private int serverPort = 4718;
-    private InetAddress address;
+    private static SocketAddress clientSocket;
+    private static SocketChannel channel = null;
+    private static DataInput fromServer;
+    private static PrintStream toServer;
     private Scanner sc;
+    private ReentrantLock locker = new ReentrantLock();
 
     public void main() {
-        try {
-            channel = DatagramChannel.open();
-            address = InetAddress.getByName("localhost");
-            socket = channel.socket();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        this.sendPacket((byte)1);
+        this.connect();
+        toServer.println("data_request");
+        this.clear();
         this.load();
+        this.gettingResponse();
         sc = new Scanner(System.in);
         String command;
         String input;
@@ -47,9 +41,10 @@ public class ClientApp {
                 data = buf[1];
             switch (command) {
                 case "load":
-                    this.sendPacket((byte)1);
+                    toServer.println("data_request");
                     this.clear();
                     this.load();
+                    this.gettingResponse();
                     break;
                 case "show":
                     this.show();
@@ -66,90 +61,118 @@ public class ClientApp {
                 case "clear":
                     this.clear();
                     break;
-                case "load_file":
-                    this.sendPacket((byte)5);
-                    break;
-                case "save_file":
-                    this.sendPacket((byte)6);
-                    break;
                 case "help":
                     this.help();
                     break;
                 case "save":
-                    this.sendPacket((byte)2);
-                    try{
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e){
-                        e.printStackTrace();
-                    }
+                    toServer.println(command);
                     this.giveCollection();
+                    //this.gettingResponse();
                     break;
-                /*case "qw":
-                    this.sendPacket((byte)3);
+                case "qw":
+                    toServer.println(command);
                     this.giveCollection();
+                    this.gettingResponse();
                     this.quit();
-                    break;*/
+                    break;
                 case "q":
-                    this.sendPacket((byte)4);
+                    toServer.println(command);
                     this.quit();
                     break;
                 default:
-                    this.sendPacket((byte)10);
-                    this.gettingResponse();
+                    try{
+                        toServer.println(command);
+                        this.gettingResponse();
+                    } catch (Exception e){
+                        e.printStackTrace();
+                    }
             }
         }
     }
 
-    private void sendPacket(byte buf){
-        DatagramPacket datagramPacket;
+    private void connect(){
+        locker.lock();
         try {
-            byte[] bytes = new byte[1];
-            bytes[0] = buf;
-            ByteArrayOutputStream toServer = new ByteArrayOutputStream();
-            toServer.write(buf);
-            toServer.close();
-            datagramPacket = new DatagramPacket(toServer.toByteArray(), toServer.size(), address, serverPort);
-            socket.send(datagramPacket);
+            clientSocket = new InetSocketAddress(InetAddress.getByName("localhost"), 4718);
+            channel = SocketChannel.open(clientSocket);
         } catch (IOException e){
-            System.out.println("Can not create packet.");
+            //e.printStackTrace();
         }
+        int i = 0;
+        while (channel == null) {
+            try {
+                Thread.sleep(1000);
+                channel = SocketChannel.open(clientSocket);
+            } catch (IOException e) {
+                if (i++ == 3){
+                    System.out.println("Server is not responding for a long time...");
+                }
+                if (i == 10){
+                    System.out.println("Server did not respond for too long. Try again later.");
+                    System.exit(0);
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        try {
+            fromServer = new DataInputStream(channel.socket().getInputStream());
+            toServer = new PrintStream(new DataOutputStream(channel.socket().getOutputStream()));
+        } catch (IOException e){
+            System.out.println("Can not create DataInput or DataOutput stream.");
+            e.printStackTrace();
+        }
+        locker.unlock();
+        this.gettingResponse();
     }
 
-    private void load() {
-        try {
-            DatagramPacket packet = new DatagramPacket(new byte[10000], 10000);
-            socket.receive(packet);
-            ByteArrayInputStream byteStream = new ByteArrayInputStream(packet.getData());
-            ObjectInputStream objectInputStream = new ObjectInputStream(byteStream);
-            Person person;
-            try {
-                while ((person = (Person) objectInputStream.readObject()) != null) {
-                    this.collec.add(person);
-                }
-            } catch (StreamCorruptedException e){
-                System.out.println("Collection has been loaded on client.");
+    private void load(){
+        final ObjectInputStream fromServer;
+        try{
+            DataInputStream dataInputStream = new DataInputStream(channel.socket().getInputStream());
+            fromServer = new ObjectInputStream(channel.socket().getInputStream());
+        } catch (IOException e){
+            System.out.println("Can not create ObjectInputStream: "+e.toString());
+            System.out.println("Just try again, that's pretty normal.");
+            return;
+        }
+        Person person;
+        try{
+            while ((person = (Person)fromServer.readObject()) != null){
+                this.collec.add(person);
             }
-            byteStream.close();
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            // выход из цикла через исключение(да, я в курсе, что это нехоршо наверное, хз как по-другому)
+            //e.printStackTrace();  StreamCorruptedException: invalid type code: 20
+        } catch (ClassNotFoundException e){
+            System.out.println("Class not found while deserializing.");
         }
     }
 
     private void giveCollection(){
+        ObjectOutputStream toServer;
+        OutputStream outputStream;
         try {
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
-            for (Person person : this.collec) {
-                objectOutputStream.writeObject(person);
+            outputStream = channel.socket().getOutputStream();
+            toServer = new ObjectOutputStream(outputStream);
+        } catch (IOException e){
+            System.out.println("Can not create ObjectOutputStream.");
+            return;
+        }
+        try {
+            //Server.collec.forEach(person -> toClient.writeObject(person));
+            for (Person person: this.collec){
+                toServer.writeObject(person);
             }
-            byte[] bytes = byteArrayOutputStream.toByteArray();
-            DatagramPacket packet = new DatagramPacket(bytes, bytes.length, address, serverPort);
-            byteArrayOutputStream.close();
-            socket.send(packet);
+            outputStream.write(64);
+            /*try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e){
+                e.printStackTrace();
+            }*/
             System.out.println("Collection has been sent to server.");
-        } catch (IOException e) {
-            System.out.println("Can not send collection to server.");
-            e.printStackTrace();
+        } catch (IOException e){
+            System.out.println("Can not write collection into stream.");
         }
     }
 
@@ -167,6 +190,7 @@ public class ClientApp {
 
     private void quit(){
         sc.close();
+        toServer.close();
         try {
             channel.close();
         } catch (IOException e){
@@ -177,21 +201,18 @@ public class ClientApp {
     }
 
     private void gettingResponse(){
-        DatagramPacket datagramPacket = new DatagramPacket(new byte[65507], 65507);
-        ByteArrayInputStream byteArrayInputStream;
         try{
-            socket.receive(datagramPacket);
-            byteArrayInputStream = new ByteArrayInputStream(datagramPacket.getData());
-            Scanner sc = new Scanner(new InputStreamReader(byteArrayInputStream));
+            Scanner sc = new Scanner(fromServer.readLine());
             sc.useDelimiter("\n");
             while (sc.hasNext()) {
                 System.out.println(sc.next());
+                sc = new Scanner(fromServer.readLine());
             }
             System.out.println("End of getting from server.");
         } catch (IOException e){
             System.out.println("The connection was lost.");
             System.out.println("Trying to reconnect...");
-            //this.connect();
+            this.connect();
         }
     }
 

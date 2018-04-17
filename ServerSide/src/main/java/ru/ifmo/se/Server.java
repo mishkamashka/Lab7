@@ -1,6 +1,5 @@
 package ru.ifmo.se;
 
-import com.sun.xml.internal.ws.developer.Serialization;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -12,54 +11,56 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Server extends Thread {
     //Серверный модуль должен реализовывать все функции управления коллекцией
     //в интерактивном режиме, кроме отображения текста в соответствии с сюжетом предметной области.
-    private static DatagramSocket serverSocket;
-    private static final int sizeOfPacket = 5000;
-    static boolean isCollection = false;
+    private static ServerSocket serverSocket;
     protected static SortedSet<Person> collec = Collections.synchronizedSortedSet(new TreeSet<Person>());
 
     @Override
     public void run() {
         try {
-            serverSocket = new DatagramSocket(4718, InetAddress.getByName("localhost"));
+            serverSocket = new ServerSocket(4718,1, InetAddress.getByName("localhost"));
             System.out.println(serverSocket.toString());
-            System.out.println(serverSocket.getLocalPort());
-            System.out.println("Server is now running.");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        System.out.println("Server is now running.");
+        try {
             while (true) {
-                DatagramPacket fromClient = new DatagramPacket(new byte[sizeOfPacket], sizeOfPacket);
-                serverSocket.receive(fromClient);
-                new Thread(new Connection(serverSocket, fromClient, isCollection)).start();
+                Socket client = serverSocket.accept();
+                Connection connec = new Connection(client);
             }
-        } catch (UnknownHostException | SocketException e){
+        } catch (Exception e) {
             System.out.println("Server is not listening.");
-            e.printStackTrace();
-        } catch (IOException e){
-            System.out.println("Can not receive datagramPacket.");
-            e.printStackTrace();
-        } catch (IllegalThreadStateException e){
             e.printStackTrace();
         }
     }
 }
 
 class Connection extends Thread {
-    private DatagramSocket client;
-    private DatagramPacket packet;
-    private InetAddress address;
-    private int clientPort;
-    private boolean isCollection;
+    private Socket client;
+    private BufferedReader fromClient;
+    private PrintStream toClient;
     private final static String filename = System.getenv("FILENAME");
     private final static String currentdir = System.getProperty("user.dir");
     private static String filepath;
     private static File file;
     private ReentrantLock locker = new ReentrantLock();
 
-    Connection(DatagramSocket serverSocket, DatagramPacket packetFromClient, boolean isCollection){
+    Connection(Socket client){
         Connection.filemaker();
-        this.packet = packetFromClient;
-        this.address = packetFromClient.getAddress();
-        this.clientPort = packetFromClient.getPort();
-        this.client = serverSocket;
-        this.isCollection = isCollection;
+        this.client = client;
+        try {
+            fromClient = new BufferedReader(
+                    new InputStreamReader(client.getInputStream()));
+            toClient = new PrintStream(client.getOutputStream());
+        } catch (IOException e){
+            try{
+                client.close();
+            }catch (IOException ee){
+                ee.printStackTrace();
+            }
+            e.printStackTrace();
+        }
+        this.start();
     }
 
     private static void filemaker(){
@@ -71,82 +72,60 @@ class Connection extends Thread {
     }
 
     public void run(){
-        locker.lock();
         try {
             this.load();
         } catch (IOException e) {
             System.out.println("Exception while trying to load collection.\n" + e.toString());
         }
-
-        if (isCollection) {
+        System.out.println("Client " + client.toString() + " has connected to server.");
+        toClient.println("You've connected to the server.\n");
+        while(true) {
             try {
-                this.clear();
-                this.getCollection();
-                Server.isCollection = false;
-            } catch (IOException e){
-                e.printStackTrace();
+                String command = fromClient.readLine();
+                System.out.println("Command from client: " + command);
+                try {
+                    switch (command) {
+                        case "data_request":
+                            this.giveCollection();
+                            break;
+                        case "save":
+                            this.clear();
+                            this.getCollection();
+                            break;
+                        case "qw":
+                            this.getCollection();
+                        case "q":
+                            this.quit();
+                            break;
+                        case "load_file":
+                            this.load();
+                            toClient.println();
+                            break;
+                        case "save_file":
+                            this.save();
+                            break;
+                        default:
+                            toClient.println("Not valid command. Try one of those:\nhelp - get help;\nclear - clear the collection;" +
+                                    "\nload - load the collection again;\nadd {element} - add new element to collection;" +
+                                    "\nremove_greater {element} - remove elements greater than given;\n" +
+                                    "show - show the collection;\nquit - quit;\n");
+                    }
+                }catch (NullPointerException e){
+                    System.out.println("Null command received.");
+                }
+            } catch (IOException e) {
+                System.out.println("Connection with the client is lost.");
+                System.out.println(e.toString());
+                try {
+                    fromClient.close();
+                    toClient.close();
+                    client.close();
+                } catch (IOException ee){
+                    System.out.println("Exception while trying to close client's streams.");
+                }
+                return;
             }
-            return;
         }
-
-        ByteArrayInputStream byteStream = new ByteArrayInputStream(packet.getData());
-        int command = byteStream.read();
-        System.out.print("Command from client:");
-        try {
-            switch (command) {
-                case 1: //data_request
-                    System.out.println(" data_request, client: " + clientPort);
-                    this.giveCollection();
-                    break;
-                case 2: //save
-                    System.out.println(" save, client: " + clientPort);
-                    Server.isCollection = true;
-                    break;
-                /*case 3: //qw
-                    System.out.println(" qw, client: " + clientPort);
-                    this.getCollection();*/
-                case 4: //q
-                    System.out.println(" q, client: " + clientPort);
-                    this.quit();
-                    break;
-                case 5: //load_file
-                    System.out.println(" load_file, client: " + clientPort);
-                    this.load();
-                    client.send(this.createPacket("\n"));
-                    break;
-                case 6: //save_file
-                    System.out.println(" save_file, client: " + clientPort);
-                    this.save();
-                    break;
-                default:
-                    System.out.println(" unknown, client: " + clientPort);
-                    client.send(this.createPacket("Not valid command. Try one of those:\nhelp - get help;\nclear - clear the collection;" +
-                            "\nload - load the collection again;\nadd {element} - add new element to collection;" +
-                            "\nremove_greater {element} - remove elements greater than given;\n" +
-                            "show - show the collection;\nquit - quit;\n"));
-            }
-            byteStream.close();
-        } catch (NullPointerException e){
-            System.out.println("Null command received.");
-        } catch (IOException e) {
-            System.out.println("Connection with the client is lost.");
-            System.out.println(e.toString());
-            client.close();
-        }
-        locker.unlock();
-    }
-
-    private DatagramPacket createPacket(String string){
-        ByteArrayOutputStream toClient = new ByteArrayOutputStream();
-        try {
-            toClient.flush();
-            toClient.write(string.getBytes());
-            toClient.close();
-        } catch (IOException e){
-            System.out.println("Can not create packet.");
-        }
-        DatagramPacket datagramPacket = new DatagramPacket(toClient.toByteArray(), toClient.size(), address, clientPort);
-        return datagramPacket;
     }
 
     private void load() throws IOException {
@@ -170,44 +149,47 @@ class Connection extends Thread {
                 }
                 System.out.println("Connection has been loaded.");
             } catch (NullPointerException e) {
-                try {
-                    client.send(this.createPacket("File is empty.\n"));
-                } catch (IOException ee){
-                    System.out.println("Can not send packet.");
-                }
+                toClient.println("File is empty.");
             }
         } catch (FileNotFoundException e) {
-            try {
-                client.send(this.createPacket("Collection can not be loaded.\nFile "+filename+" is not accessible: it does not exist or permission denied.\n"));
-            } catch (IOException ee){
-                System.out.println("Can not send packet.");
-            }
+            toClient.println("Collection can not be loaded.\nFile "+filename+" is not accessible: it does not exist or permission denied.");
             e.printStackTrace();
         }
         locker.unlock();
     }
 
-    private void getCollection() throws IOException{
-        try {
-            ByteArrayInputStream byteStream = new ByteArrayInputStream(packet.getData());
-            ObjectInputStream objectInputStream = new ObjectInputStream(byteStream);
-            Person person;
-            try {
-                while ((person = (Person) objectInputStream.readObject()) != null) {
-                    Server.collec.add(person);
-                }
-                System.out.println("Collection has been loaded on server from client " + clientPort + ".");
-            } catch (StreamCorruptedException e){
-                System.out.println("Collection has been loaded on server from client " + clientPort + ".");
-            }
-            byteStream.close();
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+    private void getCollection(){
+        locker.lock();
+        final ObjectInputStream fromClient;
+        try{
+            fromClient = new ObjectInputStream(client.getInputStream());
+        } catch (IOException e){
+            System.out.println("Can not create ObjectInputStream: "+e.toString());
+            System.out.println("Just try again, that's pretty normal.");
+            toClient.println("Can not create ObjectInputStream on server side: "+e.toString());
+            toClient.println("Just try again, that's pretty normal.");
+            return;
         }
+        Person person;
+        try{
+            while ((person = (Person)fromClient.readObject()) != null){
+                Server.collec.add(person);
+            }
+        } catch (IOException e) {
+            System.out.println("Collection has been updated by client.");
+            // выход из цикла через исключение(да, я в курсе, что это нехоршо наверное, хз как по-другому)
+            //e.printStackTrace();
+        } catch (ClassNotFoundException e){
+            System.out.println("Class not found while deserializing.");
+        }
+        locker.unlock();
     }
 
     private void quit() throws IOException {
-        System.out.println("Client " + clientPort + " has disconnected.");
+        fromClient.close();
+        toClient.close();
+        client.close();
+        System.out.println("Client has disconnected.");
     }
 
     private void save(){
@@ -220,8 +202,8 @@ class Connection extends Thread {
                 writer.write(JsonConverter.objectToJson(person));
             }
             writer.close();
-            System.out.println("Collection has been saved to file.");
-            client.send(this.createPacket("Collection has been saved to file.\n"));
+            System.out.println("Collection has been saved.");
+            toClient.println("Collection has been saved to file.\n");
         } catch (IOException e) {
             System.out.println("Collection can not be saved.\nFile "+filename+" is not accessible: it does not exist or permission denied.");
             e.printStackTrace();
@@ -238,7 +220,7 @@ class Connection extends Thread {
                 writer.write(JsonConverter.objectToJson(person));
             }
             writer.close();
-            System.out.println("Collection has been saved to file.");
+            System.out.println("Collection has been saved.");
         } catch (IOException e) {
             System.out.println("Collection can not be saved.\nFile "+filename+" is not accessible: it does not exist or permission denied.");
             e.printStackTrace();
@@ -247,20 +229,21 @@ class Connection extends Thread {
 
     private void giveCollection(){
         locker.lock();
+        ObjectOutputStream toClient;
         try {
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
-            for (Person person : Server.collec) {
-                objectOutputStream.writeObject(person);
+            toClient = new ObjectOutputStream(this.toClient);
+        } catch (IOException e){
+            System.out.println("Can not create ObjectOutputStream.");
+            return;
+        }
+        try {
+            //Server.collec.forEach(person -> toClient.writeObject(person));
+            for (Person person: Server.collec){
+                toClient.writeObject(person);
             }
-            byte[] bytes = byteArrayOutputStream.toByteArray();
-            DatagramPacket packet = new DatagramPacket(bytes, bytes.length, address, clientPort);
-            byteArrayOutputStream.close();
-            client.send(packet);
-            System.out.println("Collection has been sent to client.");
-        } catch (IOException e) {
-            System.out.println("Can not send collection to client.");
-            e.printStackTrace();
+            this.toClient.println(" Collection copy has been loaded on client.\n");
+        } catch (IOException e){
+            System.out.println("Can not write collection into stream.");
         }
         locker.unlock();
     }
