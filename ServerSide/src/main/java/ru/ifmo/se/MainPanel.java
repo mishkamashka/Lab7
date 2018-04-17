@@ -10,32 +10,54 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
 
-public class MainPanel {
-    static JMenu menu;
-    static JLabel selectedLabel;
-    static JFrame f;
-    static JMenuBar jMenuBar;
-    static JMenuItem jMenuItem;
-    static CollectionPanel collectionPanel;
-    static JTree jTree;
+public class MainPanel extends JFrame {
+    JMenu menu;
+    JLabel selectedLabel;
+    JMenuBar jMenuBar;
+    JMenuItem jMenuItem;
+    CollectionPanel collectionPanel;
+    JTree jTree;
+    JPanel jPanel;
 
 
-    public static void main (String ... args){
+    public MainPanel() {
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setTitle("Lab 7. ServerSide");
+        createMenu();
 
-        /*Known kozlik = new Known("Andy");
-        Known neznaika = new Known("Nikken");
-        Known stranger = new Known("Frank");
-        Server.collec.add(kozlik);
-        Server.collec.add(neznaika);
-        Server.collec.add(stranger);*/
+        Container container = getContentPane();
+        jPanel = new JPanel(new BorderLayout());
+        jPanel.setDoubleBuffered(true);
+        container.add(jPanel);
+        updateTree();
+        pack();
+        setVisible(true);
+    }
 
-        f = new JFrame();
-        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        f.setTitle("Lab 7. ServerSide");
-        //f.setLayout(new BorderLayout());
+    public void updateTree(){
+        collectionPanel = new CollectionPanel(Server.collec);
+        jTree = collectionPanel.getJTree();
+        jPanel.add(jTree, BorderLayout.CENTER);
+        jPanel.add(new JScrollPane(jTree));
+        selectedLabel = new JLabel();
+        jPanel.add(selectedLabel, BorderLayout.SOUTH);
+        jTree.getSelectionModel().addTreeSelectionListener(new TreeSelectionListener() {
+            @Override
+            public void valueChanged(TreeSelectionEvent e) {
+                DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) jTree.getLastSelectedPathComponent();
+                try {
+                    Known known = new Known(selectedNode.getUserObject().toString());
+                    for (Person person : Server.collec) {
+                        if (person.equals(known))
+                            selectedLabel.setText(person.description());
+                    }
+                } catch (NullPointerException ee){ }
+            }
+        });
+        jPanel.setVisible(true);
+    }
 
-        MainPanel.updateTree();
-
+    public void createMenu(){
         jMenuBar = new JMenuBar();
         menu = new JMenu("Menu");
         jMenuItem = new JMenuItem("Load collection from the file",
@@ -51,35 +73,11 @@ public class MainPanel {
                 } catch (IOException e){
                     e.printStackTrace();
                 }
-                MainPanel.updateTree();
+                updateTree();
             }
         });
         menu.add(jMenuItem);
         jMenuBar.add(menu);
-        f.setJMenuBar(jMenuBar);
-        f.pack();
-        f.setVisible(true);
-    }
-
-    public static void updateTree(){
-        collectionPanel = new CollectionPanel(Server.collec);
-        jTree = collectionPanel.getJTree();
-        f.add(jTree, BorderLayout.CENTER);
-        f.add(new JScrollPane(jTree));
-        selectedLabel = new JLabel();
-        f.add(selectedLabel, BorderLayout.SOUTH);
-        jTree.getSelectionModel().addTreeSelectionListener(new TreeSelectionListener() {
-            @Override
-            public void valueChanged(TreeSelectionEvent e) {
-                DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) collectionPanel.getJTree().getLastSelectedPathComponent();
-                try {
-                    Known known = new Known(selectedNode.getUserObject().toString());
-                    for (Person person : Server.collec) {
-                        if (person.equals(known))
-                            selectedLabel.setText(person.description());
-                    }
-                } catch (NullPointerException ee){ }
-            }
-        });
+        setJMenuBar(jMenuBar);
     }
 }
