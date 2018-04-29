@@ -16,11 +16,17 @@ public class MainPanel extends JFrame {
     JMenu menu;
     JMenuBar jMenuBar;
     JMenuItem jMenuItem;
+    JLabel label;
+    JLabel resLabel;
+    JTextField textField;
     JTree jTree;
+    JButton addButton;
+    JButton remButton;
     JPanel jPanel;
     Container container;
     DefaultTreeModel model;
     DefaultMutableTreeNode root;
+    GroupLayout groupLayout;
 
 
     public MainPanel() {
@@ -29,16 +35,39 @@ public class MainPanel extends JFrame {
         createMenu();
 
         container = getContentPane();
-        jPanel = new JPanel(new BorderLayout());
-        add(jPanel);
+        jPanel = new JPanel();
+        groupLayout = new GroupLayout(jPanel);
+        groupLayout.getAutoCreateGaps();
         container.add(jPanel);
         root = new DefaultMutableTreeNode("People");
         jTree = new JTree(root);
         updateTree();
-        jPanel.add(new JScrollPane(jTree));
         model = (DefaultTreeModel) jTree.getModel();
-        jPanel.add(jTree, BorderLayout.CENTER);
+        createOptions();
+        groupLayout.setVerticalGroup(
+                groupLayout.createParallelGroup()
+                        .addComponent(jTree).addGap(100)
+                        .addGroup(groupLayout.createSequentialGroup()
+                        .addComponent(label).addGap(10)
+                        .addComponent(textField).addGap(10)
+                        .addGroup(groupLayout.createParallelGroup(GroupLayout.Alignment.TRAILING)
+                                .addComponent(addButton).addGap(10)
+                                .addComponent(remButton)).addGap(10)
+                        .addComponent(resLabel)));
+        groupLayout.setHorizontalGroup(
+                groupLayout.createSequentialGroup()
+                        .addComponent(jTree).addGap(100)
+                        .addGroup(groupLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
+                        .addComponent(label).addGap(10)
+                        .addComponent(textField).addGap(10)
+                        .addGroup(groupLayout.createSequentialGroup()
+                                .addComponent(addButton).addGap(10)
+                                .addComponent(remButton)).addGap(10)
+                        .addComponent(resLabel)));
+
         model.reload();
+        groupLayout.linkSize(textField);
+        jPanel.setLayout(groupLayout);
         pack();
         setVisible(true);
     }
@@ -83,5 +112,29 @@ public class MainPanel extends JFrame {
         menu.add(jMenuItem);
         jMenuBar.add(menu);
         setJMenuBar(jMenuBar);
+    }
+
+    public void createOptions(){
+        label = new JLabel("Object to add/Remove objects greater than:");
+        resLabel = new JLabel();
+        textField = new JTextField("{\"name\":\"Andy\"}",15);
+        addButton = new JButton("Add object");
+        addButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String string = textField.getText();
+                resLabel.setText(Connection.addObject(string));
+                updateTree();
+            }
+        });
+        remButton = new JButton("Remove greater objects");
+        remButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String string = textField.getText();
+                resLabel.setText(Connection.removeGreater(string));
+                updateTree();
+            }
+        });
     }
 }

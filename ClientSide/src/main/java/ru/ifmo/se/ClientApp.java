@@ -221,8 +221,9 @@ public class ClientApp {
     private void addObject(String data) {
         try {
             if ((JsonConverter.jsonToObject(data, Known.class).getName() != null)) {
-                this.collec.add(JsonConverter.jsonToObject(data, Known.class));
-                System.out.println("Object " + JsonConverter.jsonToObject(data, Known.class).toString() + " has been added.\n");
+                if (this.collec.add(JsonConverter.jsonToObject(data, Known.class)))
+                    System.out.println("Object " + JsonConverter.jsonToObject(data, Known.class).toString() + " has been added.\n");
+                else System.out.println("This object is already in the collection.");
             }
             else System.out.println("Object null can not be added.");
         } catch (NullPointerException | JsonSyntaxException e) {

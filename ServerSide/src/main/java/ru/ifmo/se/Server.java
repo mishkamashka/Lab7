@@ -1,5 +1,6 @@
 package ru.ifmo.se;
 
+import com.google.gson.JsonSyntaxException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -262,5 +263,35 @@ class Connection extends Thread {
 
     public static void clear() {
         Server.collec.clear();
+    }
+
+    public static String addObject(String data) {
+        locker.lock();
+        try {
+            if ((JsonConverter.jsonToObject(data, Known.class).getName() != null)) {
+                if (Server.collec.add(JsonConverter.jsonToObject(data, Known.class))) {
+                    System.out.println("Current collection has been updated by server.");
+                    locker.unlock();
+                    return ("Object " + JsonConverter.jsonToObject(data, Known.class).toString() + " has been added.");
+                } else{
+                    locker.unlock();
+                    return ("This object is already in the collection.");
+                }
+            } else {
+                locker.unlock();
+                return ("Object null can not be added.");
+            }
+        } catch (NullPointerException | JsonSyntaxException e) {
+            locker.unlock();
+            return ("Something went wrong. Check your object and try again. For example of json format see \"help\" command.");
+        }
+    }
+
+    public static String removeGreater(String data) {
+        locker.lock();
+        Person a = JsonConverter.jsonToObject(data, Known.class);
+        Server.collec.removeIf(person -> a.compareTo(person) > 0);
+        locker.unlock();
+        return ("Objects greater than given have been removed.");
     }
 }
