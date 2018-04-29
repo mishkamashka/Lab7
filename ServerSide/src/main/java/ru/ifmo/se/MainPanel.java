@@ -4,6 +4,7 @@ import javax.swing.*;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -18,6 +19,9 @@ public class MainPanel extends JFrame {
     CollectionPanel collectionPanel;
     JTree jTree;
     JPanel jPanel;
+    Container container;
+    DefaultTreeModel model;
+    DefaultMutableTreeNode root;
 
 
     public MainPanel() {
@@ -25,22 +29,13 @@ public class MainPanel extends JFrame {
         setTitle("Lab 7. ServerSide");
         createMenu();
 
-        Container container = getContentPane();
+        container = getContentPane();
         jPanel = new JPanel(new BorderLayout());
-        jPanel.setDoubleBuffered(true);
+        add(jPanel);
         container.add(jPanel);
+        root = new DefaultMutableTreeNode("People");
         updateTree();
-        pack();
-        setVisible(true);
-    }
-
-    public void updateTree(){
-        collectionPanel = new CollectionPanel(Server.collec);
-        jTree = collectionPanel.getJTree();
-        jPanel.add(jTree, BorderLayout.CENTER);
-        jPanel.add(new JScrollPane(jTree));
-        selectedLabel = new JLabel();
-        jPanel.add(selectedLabel, BorderLayout.SOUTH);
+        jTree = new JTree(root);
         jTree.getSelectionModel().addTreeSelectionListener(new TreeSelectionListener() {
             @Override
             public void valueChanged(TreeSelectionEvent e) {
@@ -48,12 +43,31 @@ public class MainPanel extends JFrame {
                 try {
                     Known known = new Known(selectedNode.getUserObject().toString());
                     for (Person person : Server.collec) {
+
                         if (person.equals(known))
                             selectedLabel.setText(person.description());
                     }
                 } catch (NullPointerException ee){ }
             }
         });
+        model = (DefaultTreeModel) jTree.getModel();
+        jPanel.add(jTree, BorderLayout.CENTER);
+        model.reload();
+        pack();
+        setVisible(true);
+    }
+
+    public void updateTree(){ //to google: how to update jtree
+        Server.collec.forEach(person -> root.add(new DefaultMutableTreeNode(person.toString())));
+        /*jTree = new JTree(root);
+        add(jTree, BorderLayout.CENTER);
+        jTree = collectionPanel.getJTree();
+        jPanel.add(jTree, BorderLayout.CENTER);
+        jPanel.add(new JScrollPane(jTree));*/
+        selectedLabel = new JLabel();
+        jPanel.add(selectedLabel, BorderLayout.SOUTH);
+
+        jPanel.updateUI();
         jPanel.setVisible(true);
     }
 
@@ -74,6 +88,7 @@ public class MainPanel extends JFrame {
                     e.printStackTrace();
                 }
                 updateTree();
+                jPanel.updateUI();
             }
         });
         menu.add(jMenuItem);

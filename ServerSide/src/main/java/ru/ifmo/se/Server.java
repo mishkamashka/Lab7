@@ -158,7 +158,7 @@ class Connection extends Thread {
         locker.unlock();
     }
 
-    public void getCollection(){
+    private void getCollection(){
         locker.lock();
         final ObjectInputStream fromClient;
         try{
@@ -185,14 +185,14 @@ class Connection extends Thread {
         locker.unlock();
     }
 
-    public void quit() throws IOException {
+    private void quit() throws IOException {
         fromClient.close();
         toClient.close();
         client.close();
         System.out.println("Client has disconnected.");
     }
 
-    public void save(){
+    private void save(){
         locker.lock();
         try {
             Writer writer = new FileWriter(file);
@@ -227,7 +227,7 @@ class Connection extends Thread {
         }
     }
 
-    public void giveCollection(){
+    private void giveCollection(){
         locker.lock();
         ObjectOutputStream toClient;
         try {
@@ -248,7 +248,7 @@ class Connection extends Thread {
         locker.unlock();
     }
 
-    public void showCollection() {
+    private void showCollection() {
         if (Server.collec.isEmpty())
             System.out.println("Collection is empty.");
         for (Person person : Server.collec) {

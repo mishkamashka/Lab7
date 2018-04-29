@@ -212,18 +212,6 @@ public abstract class Person implements Serializable, Comparable {
         return result;
     }
 
-    /*@Override
-    public int compareTo(Object o){
-        Person ob = (Person) o;
-        if (this.steps_from_door < ob.steps_from_door)
-            return 1;
-        else
-        if (this.steps_from_door > ob.steps_from_door)
-            return -1;
-        else
-            return 0;
-    }*/
-
     @Override
     public int compareTo(Object o) {
         Person ob = (Person) o;

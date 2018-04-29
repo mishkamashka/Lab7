@@ -2,6 +2,7 @@ package ru.ifmo.se;
 
         import javax.swing.*;
         import javax.swing.tree.DefaultMutableTreeNode;
+        import java.awt.*;
         import java.util.Collections;
         import java.util.SortedSet;
         import java.util.TreeSet;
@@ -21,6 +22,7 @@ class CollectionPanel extends JPanel{
         root.add(peopleNode);
         Server.collec.forEach(person -> peopleNode.add(new DefaultMutableTreeNode(person.toString())));
         jTree = new JTree(root);
+        add(jTree, BorderLayout.CENTER);
     }
 
     public JTree getJTree(){

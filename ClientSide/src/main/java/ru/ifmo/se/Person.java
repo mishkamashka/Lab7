@@ -136,6 +136,27 @@ public abstract class Person implements Serializable, Comparable {
         System.out.println(tempString.toString());
     }
 
+    public String description() {
+        StringBuilder tempString = new StringBuilder();
+        tempString.append(this.toString());
+        if (this.generalClothes !=null && (this.generalClothes.size() != 0 || this.shoes.size() != 0 || this.accessories.size() != 0)) {
+            tempString.append(" is wearing ");
+            tempString.append(this.getClothes(this.generalClothes));
+        }
+        if (this.shoes != null && this.shoes.size() != 0) {
+            tempString.append(", ");
+            tempString.append(this.getClothes(this.shoes));
+        }
+        if (this.accessories != null && this.accessories.size() != 0) {
+            tempString.append(", ");
+            tempString.append(this.getClothes(this.accessories));
+        }
+        tempString.append(" standing in " + this.steps_from_door + " steps from the door");
+        if (tempString.length() > this.toString().length())
+            tempString.append(".");
+        return tempString.toString();
+    }
+
     public Bed getBed(double paid) {
         System.out.println(this.toString() + " pays " + paid + " to get a bed set up.");
         Bed bed = new Bed();
@@ -193,19 +214,6 @@ public abstract class Person implements Serializable, Comparable {
     }
 
     @Override
-    public int compareTo(Object o){
-        Person ob = (Person) o;
-        if (this.steps_from_door < ob.steps_from_door)
-            return 1;
-        else
-            if (this.steps_from_door > ob.steps_from_door)
-                return -1;
-            else
-                return 0;
-    }
-
-    // Good comparision.
-    /*@Override
     public int compareTo(Object o) {
         Person ob = (Person) o;
         if (this.name != null && this.name.compareTo(ob.getName()) > 0)
@@ -218,5 +226,5 @@ public abstract class Person implements Serializable, Comparable {
             return -1;
         else
             return 0;
-    }*/
+    }
 }
