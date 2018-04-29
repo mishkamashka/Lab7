@@ -67,7 +67,7 @@ public class ClientApp {
                 case "save":
                     toServer.println(command);
                     this.giveCollection();
-                    //this.gettingResponse();
+                    this.gettingResponse();
                     break;
                 case "qw":
                     toServer.println(command);

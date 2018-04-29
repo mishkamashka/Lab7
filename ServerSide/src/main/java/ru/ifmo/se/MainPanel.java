@@ -10,13 +10,12 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
+import java.util.Collection;
 
 public class MainPanel extends JFrame {
     JMenu menu;
-    JLabel selectedLabel;
     JMenuBar jMenuBar;
     JMenuItem jMenuItem;
-    CollectionPanel collectionPanel;
     JTree jTree;
     JPanel jPanel;
     Container container;
@@ -34,22 +33,9 @@ public class MainPanel extends JFrame {
         add(jPanel);
         container.add(jPanel);
         root = new DefaultMutableTreeNode("People");
-        updateTree();
         jTree = new JTree(root);
-        jTree.getSelectionModel().addTreeSelectionListener(new TreeSelectionListener() {
-            @Override
-            public void valueChanged(TreeSelectionEvent e) {
-                DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) jTree.getLastSelectedPathComponent();
-                try {
-                    Known known = new Known(selectedNode.getUserObject().toString());
-                    for (Person person : Server.collec) {
-
-                        if (person.equals(known))
-                            selectedLabel.setText(person.description());
-                    }
-                } catch (NullPointerException ee){ }
-            }
-        });
+        updateTree();
+        jPanel.add(new JScrollPane(jTree));
         model = (DefaultTreeModel) jTree.getModel();
         jPanel.add(jTree, BorderLayout.CENTER);
         model.reload();
@@ -58,28 +44,18 @@ public class MainPanel extends JFrame {
     }
 
     public void updateTree(){ //to google: how to update jtree
+        root.removeAllChildren();
         Server.collec.forEach(person -> root.add(new DefaultMutableTreeNode(person.toString())));
-        /*jTree = new JTree(root);
-        add(jTree, BorderLayout.CENTER);
-        jTree = collectionPanel.getJTree();
-        jPanel.add(jTree, BorderLayout.CENTER);
-        jPanel.add(new JScrollPane(jTree));*/
-        selectedLabel = new JLabel();
-        jPanel.add(selectedLabel, BorderLayout.SOUTH);
-
+        jTree.updateUI();
         jPanel.updateUI();
-        jPanel.setVisible(true);
     }
 
     public void createMenu(){
         jMenuBar = new JMenuBar();
         menu = new JMenu("Menu");
-        jMenuItem = new JMenuItem("Load collection from the file",
-                KeyEvent.VK_1);
+        jMenuItem = new JMenuItem("Load collection from the file (Current collection will be lost)");
         jMenuItem.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent a) {
-                //f.setVisible(false);
-                //f.remove(jTree);
                 Connection.filemaker();
                 try{
                     Connection.clear();
@@ -88,7 +64,20 @@ public class MainPanel extends JFrame {
                     e.printStackTrace();
                 }
                 updateTree();
-                jPanel.updateUI();
+            }
+        });
+        menu.add(jMenuItem);
+        jMenuItem = new JMenuItem("Load current collection");
+        jMenuItem.addActionListener(new ActionListener(){
+            public void actionPerformed(ActionEvent a) {
+                updateTree();
+            }
+        });
+        menu.add(jMenuItem);
+        jMenuItem = new JMenuItem("Save current collection to the file");
+        jMenuItem.addActionListener(new ActionListener(){
+            public void actionPerformed(ActionEvent a) {
+                Connection.saveOnQuit();
             }
         });
         menu.add(jMenuItem);

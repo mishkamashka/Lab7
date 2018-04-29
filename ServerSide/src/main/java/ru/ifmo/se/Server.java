@@ -161,13 +161,16 @@ class Connection extends Thread {
     private void getCollection(){
         locker.lock();
         final ObjectInputStream fromClient;
+        DataInputStream dataInputStream;
         try{
+            dataInputStream = new DataInputStream(client.getInputStream());
+            Scanner sc = new Scanner(dataInputStream);
             fromClient = new ObjectInputStream(client.getInputStream());
         } catch (IOException e){
             System.out.println("Can not create ObjectInputStream: "+e.toString());
             System.out.println("Just try again, that's pretty normal.");
-            toClient.println("Can not create ObjectInputStream on server side: "+e.toString());
-            toClient.println("Just try again, that's pretty normal.");
+            toClient.println("Can not create ObjectInputStream on server side: "+e.toString()+"\n");
+            toClient.println("Better restart the client app. Just try again, that's pretty normal.\n");
             return;
         }
         Person person;
@@ -177,6 +180,7 @@ class Connection extends Thread {
             }
         } catch (IOException e) {
             System.out.println("Collection has been updated by client.");
+            toClient.println("Server has received collection successfully.\n");
             // выход из цикла через исключение(да, я в курсе, что это нехоршо наверное, хз как по-другому)
             //e.printStackTrace();
         } catch (ClassNotFoundException e){
