@@ -1,16 +1,12 @@
 package ru.ifmo.se;
 
 import javax.swing.*;
-import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
 import java.io.IOException;
-import java.util.Collection;
 
 public class MainPanel extends JFrame {
     JMenu menu;
@@ -41,6 +37,13 @@ public class MainPanel extends JFrame {
         container.add(jPanel);
         root = new DefaultMutableTreeNode("People");
         jTree = new JTree(root);
+        Connection.filemaker();
+        try{
+            Connection.load();
+        } catch (IOException e){
+            e.printStackTrace();
+        }
+        updateTree();
         updateTree();
         model = (DefaultTreeModel) jTree.getModel();
         createOptions();
@@ -107,6 +110,14 @@ public class MainPanel extends JFrame {
         jMenuItem.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent a) {
                 Connection.saveOnQuit();
+            }
+        });
+        menu.add(jMenuItem);
+        jMenuItem = new JMenuItem("Clear current collection");
+        jMenuItem.addActionListener(new ActionListener(){
+            public void actionPerformed(ActionEvent a) {
+                Connection.clear();
+                updateTree();
             }
         });
         menu.add(jMenuItem);
