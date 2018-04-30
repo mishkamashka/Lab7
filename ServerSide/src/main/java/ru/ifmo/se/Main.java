@@ -5,7 +5,8 @@ public class Main {
 
         Server a = new Server();
         //Runtime.getRuntime().addShutdownHook(new Thread(Connection::saveOnQuit));
-        a.start();
+        //a.start();
+        new Thread(a).start();
         MainPanel mainPanel = new MainPanel();
     }
 }

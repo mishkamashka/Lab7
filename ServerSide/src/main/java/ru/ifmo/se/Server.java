@@ -235,8 +235,10 @@ class Connection extends Thread {
     private void giveCollection(){
         locker.lock();
         ObjectOutputStream toClient;
+        DataOutputStream toCl;
         try {
             toClient = new ObjectOutputStream(this.toClient);
+            toCl = new DataOutputStream(this.toClient);
         } catch (IOException e){
             System.out.println("Can not create ObjectOutputStream.");
             return;
@@ -246,7 +248,7 @@ class Connection extends Thread {
             for (Person person: Server.collec){
                 toClient.writeObject(person);
             }
-            this.toClient.println(" Collection copy has been loaded on client.\n");
+            toCl.write(64);
         } catch (IOException e){
             System.out.println("Can not write collection into stream.");
         }

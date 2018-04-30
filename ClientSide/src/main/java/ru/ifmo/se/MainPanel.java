@@ -6,6 +6,7 @@ import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.geom.Ellipse2D;
 import java.io.IOException;
 
 public class MainPanel extends JFrame {
@@ -18,31 +19,35 @@ public class MainPanel extends JFrame {
     JTree jTree;
     JButton addButton;
     JButton remButton;
+    JButton repaintButton;
     JPanel jPanel;
     Container container;
     DefaultTreeModel model;
     DefaultMutableTreeNode root;
     GroupLayout groupLayout;
+    ClientApp app;
 
 
     public MainPanel() {
+        app = new ClientApp();
+
+
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setTitle("Lab 7. ServerSide");
+        setTitle("Lab 7. ClientSide");
         createMenu();
         container = getContentPane();
-        jPanel = new JPanel(new BorderLayout());
+        jPanel = new JPanel();
         groupLayout = new GroupLayout(jPanel);
         groupLayout.getAutoCreateGaps();
         container.add(jPanel);
         root = new DefaultMutableTreeNode("People");
         jTree = new JTree(root);
-        Connection.filemaker();
-        try{
-            Connection.load();
-        } catch (IOException e){
-            e.printStackTrace();
-        }
+        app.connect();
+        ClientApp.toServer.println("data_request");
+        app.clear();
+        app.load();
         updateTree();
+
         model = (DefaultTreeModel) jTree.getModel();
         createOptions();
         groupLayout.setVerticalGroup(
@@ -54,7 +59,8 @@ public class MainPanel extends JFrame {
                         .addGroup(groupLayout.createParallelGroup(GroupLayout.Alignment.TRAILING)
                                 .addComponent(addButton).addGap(10)
                                 .addComponent(remButton)).addGap(10)
-                        .addComponent(resLabel)));
+                        .addComponent(resLabel))
+                        .addComponent(repaintButton));
         groupLayout.setHorizontalGroup(
                 groupLayout.createSequentialGroup()
                         .addComponent(jTree).addGap(100)
@@ -64,18 +70,22 @@ public class MainPanel extends JFrame {
                         .addGroup(groupLayout.createSequentialGroup()
                                 .addComponent(addButton).addGap(10)
                                 .addComponent(remButton)).addGap(10)
-                        .addComponent(resLabel)));
+                        .addComponent(resLabel))
+                        .addComponent(repaintButton));
 
         model.reload();
         groupLayout.linkSize(textField);
         jPanel.setLayout(groupLayout);
+
+        //adding graph-thing
+
         pack();
         setVisible(true);
     }
 
-    public void updateTree(){ //to google: how to update jtree
+    public void updateTree(){
         root.removeAllChildren();
-        Server.collec.forEach(person -> root.add(new DefaultMutableTreeNode(person.toString())));
+        app.collec.forEach(person -> root.add(new DefaultMutableTreeNode(person.toString())));
         jTree.updateUI();
         jPanel.updateUI();
     }
@@ -83,38 +93,29 @@ public class MainPanel extends JFrame {
     public void createMenu(){
         jMenuBar = new JMenuBar();
         menu = new JMenu("Menu");
-        jMenuItem = new JMenuItem("Load collection from the file (Current collection will be lost)");
+        jMenuItem = new JMenuItem("Load collection from server");
         jMenuItem.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent a) {
-                Connection.filemaker();
-                try{
-                    Connection.clear();
-                    Connection.load();
-                } catch (IOException e){
-                    e.printStackTrace();
-                }
+                ClientApp.toServer.println("data_request");
+                app.clear();
+                app.load();
                 updateTree();
             }
         });
         menu.add(jMenuItem);
-        jMenuItem = new JMenuItem("Load current collection");
+        jMenuItem = new JMenuItem("Save current collection on server");
         jMenuItem.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent a) {
-                updateTree();
-            }
-        });
-        menu.add(jMenuItem);
-        jMenuItem = new JMenuItem("Save current collection to the file");
-        jMenuItem.addActionListener(new ActionListener(){
-            public void actionPerformed(ActionEvent a) {
-                Connection.saveOnQuit();
+                ClientApp.toServer.println("save");
+                app.giveCollection();
+                resLabel.setText(app.gettingResponse());
             }
         });
         menu.add(jMenuItem);
         jMenuItem = new JMenuItem("Clear current collection");
         jMenuItem.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent a) {
-                Connection.clear();
+                app.clear();
                 updateTree();
             }
         });
@@ -132,7 +133,7 @@ public class MainPanel extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String string = textField.getText();
-                resLabel.setText(Connection.addObject(string));
+                resLabel.setText(app.addObject(string));
                 updateTree();
             }
         });
@@ -141,8 +142,15 @@ public class MainPanel extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String string = textField.getText();
-                resLabel.setText(Connection.removeGreater(string));
+                resLabel.setText(app.removeGreater(string));
                 updateTree();
+            }
+        });
+        repaintButton = new JButton("Repaint");
+        repaintButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
             }
         });
     }

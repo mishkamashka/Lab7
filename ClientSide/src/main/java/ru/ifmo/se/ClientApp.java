@@ -18,7 +18,7 @@ public class ClientApp {
     private static SocketAddress clientSocket;
     private static SocketChannel channel = null;
     private static DataInput fromServer;
-    private static PrintStream toServer;
+    static PrintStream toServer;
     private Scanner sc;
     private ReentrantLock locker = new ReentrantLock();
 
@@ -90,7 +90,7 @@ public class ClientApp {
         }
     }
 
-    private void connect(){
+    public void connect(){
         locker.lock();
         try {
             clientSocket = new InetSocketAddress(InetAddress.getByName("localhost"), 4718);
@@ -123,10 +123,10 @@ public class ClientApp {
             e.printStackTrace();
         }
         locker.unlock();
-        this.gettingResponse();
+        System.out.println(this.gettingResponse());
     }
 
-    private void load(){
+    public void load(){
         final ObjectInputStream fromServer;
         try{
             DataInputStream dataInputStream = new DataInputStream(channel.socket().getInputStream());
@@ -142,6 +142,7 @@ public class ClientApp {
                 this.collec.add(person);
             }
         } catch (IOException e) {
+            System.out.println("Collection has been loaded.");
             // выход из цикла через исключение(да, я в курсе, что это нехоршо наверное, хз как по-другому)
             //e.printStackTrace();  StreamCorruptedException: invalid type code: 20
         } catch (ClassNotFoundException e){
@@ -149,7 +150,7 @@ public class ClientApp {
         }
     }
 
-    private void giveCollection(){
+    public void giveCollection(){
         ObjectOutputStream toServer;
         OutputStream outputStream;
         try {
@@ -195,44 +196,48 @@ public class ClientApp {
         System.exit(0);
     }
 
-    private void gettingResponse(){
+    public String gettingResponse(){
+        StringBuilder temp = new StringBuilder();
         try{
             Scanner sc = new Scanner(fromServer.readLine());
             sc.useDelimiter("\n");
             while (sc.hasNext()) {
-                System.out.println(sc.next());
+                temp.append(sc.next());
                 sc = new Scanner(fromServer.readLine());
             }
-            System.out.println("End of getting from server.");
+            System.out.println(temp.toString() + "\nEnd of getting from server.");
+            return temp.toString();
         } catch (IOException e){
-            System.out.println("The connection was lost.");
-            System.out.println("Trying to reconnect...");
+            temp.append("The connection was lost.\nTrying to reconnect...");
             this.connect();
+            return temp.toString();
         }
     }
 
-    private void removeGreater(String data) {
+    public String removeGreater(String data) {
         Person a = JsonConverter.jsonToObject(data, Known.class);
-        System.out.println(a.toString());
         this.collec.removeIf(person -> a.compareTo(person) > 0);
-        System.out.println("Objects greater than given have been removed.\n");
+        return ("Objects greater than given have been removed.");
     }
 
-    private void addObject(String data) {
+    public String addObject(String data) {
         try {
             if ((JsonConverter.jsonToObject(data, Known.class).getName() != null)) {
-                if (this.collec.add(JsonConverter.jsonToObject(data, Known.class)))
-                    System.out.println("Object " + JsonConverter.jsonToObject(data, Known.class).toString() + " has been added.\n");
-                else System.out.println("This object is already in the collection.");
+                if (this.collec.add(JsonConverter.jsonToObject(data, Known.class))) {
+                    System.out.println("Current collection has been updated by server.");
+                    return ("Object " + JsonConverter.jsonToObject(data, Known.class).toString() + " has been added.");
+                } else{
+                    return ("This object is already in the collection.");
+                }
+            } else {
+                return ("Object null can not be added.");
             }
-            else System.out.println("Object null can not be added.");
         } catch (NullPointerException | JsonSyntaxException e) {
-            System.out.println("Something went wrong. Check your object and try again. For example of json format see \"help\" command.\n");
-            System.out.println(e.toString());
+            return ("Something went wrong. Check your object and try again. For example of json format see \"help\" command.");
         }
     }
 
-    private void clear() {
+    public void clear() {
         if (collec.isEmpty())
             System.out.println("There is nothing to remove, collection is empty.");
         else {
