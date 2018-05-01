@@ -1,7 +1,11 @@
 package ru.ifmo.se;
 
+import ru.ifmo.se.enums.State;
+
 import javax.swing.*;
 import javax.swing.border.Border;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
@@ -10,6 +14,8 @@ import java.awt.event.ActionListener;
 import java.awt.geom.Ellipse2D;
 import java.io.IOException;
 import java.nio.ByteOrder;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class MainPanel extends JFrame {
@@ -24,6 +30,10 @@ public class MainPanel extends JFrame {
     JButton remButton;
     JButton startButton;
     JButton stopButton;
+    JCheckBox checkBoxN;
+    JCheckBox checkBoxA;
+    JCheckBox checkBoxI;
+    JCheckBox checkBoxB;
     JPanel jPanel;
     Container container;
     DefaultTreeModel model;
@@ -32,7 +42,8 @@ public class MainPanel extends JFrame {
     ClientApp app;
     GraphPanel graphPanel;
     Thread thread;
-
+    Set<State> states = new HashSet<>();
+    volatile Set<Person> persons = new HashSet<>();
 
     public MainPanel() {
         app = new ClientApp();
@@ -71,7 +82,11 @@ public class MainPanel extends JFrame {
                             .addComponent(resLabel))
                         .addGroup(groupLayout.createSequentialGroup()
                             .addComponent(startButton).addGap(10)
-                            .addComponent(stopButton)).addGap(10)
+                            .addComponent(stopButton).addGap(10)
+                            .addComponent(checkBoxN).addGap(5)
+                            .addComponent(checkBoxA).addGap(5)
+                            .addComponent(checkBoxB).addGap(5)
+                            .addComponent(checkBoxI)).addGap(10)
                             .addComponent(graphPanel, 300,500,500));
         groupLayout.setHorizontalGroup(
                 groupLayout.createSequentialGroup()
@@ -85,7 +100,11 @@ public class MainPanel extends JFrame {
                                 .addComponent(resLabel)).addGap(50)
                             .addGroup(groupLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
                                 .addComponent(startButton).addGap(10)
-                                .addComponent(stopButton)).addGap(10)
+                                .addComponent(stopButton).addGap(10)
+                                .addComponent(checkBoxN).addGap(10)
+                                .addComponent(checkBoxA).addGap(10)
+                                .addComponent(checkBoxB).addGap(10)
+                                .addComponent(checkBoxI)).addGap(10)
                             .addComponent(graphPanel, 300, 500, 500));
         model.reload();
         groupLayout.linkSize(textField);
@@ -166,7 +185,13 @@ public class MainPanel extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 thread = new Thread(() -> {
                     int i = 0;
-                    while (i < app.collec.size()*3) {
+                    app.collec.forEach(person -> {
+                        for (State state: states){
+                            if (person.getState().equals(state))
+                                persons.add(person);
+                        }
+                    });
+                    while (i < persons.size()*3) {
                         i = makeBrighter();
                         try {
                             Thread.sleep(5000/255);
@@ -175,7 +200,7 @@ public class MainPanel extends JFrame {
                         }
                     }
                     i = 0;
-                    while (i < app.collec.size()*3) {
+                    while (i < persons.size()*3) {
                         i = makeDarker();
                         try {
                             Thread.sleep(5000/255);
@@ -185,6 +210,7 @@ public class MainPanel extends JFrame {
                     }
                 });
                 thread.start();
+                persons.clear();
             }
         });
         stopButton = new JButton("Stop");
@@ -194,15 +220,55 @@ public class MainPanel extends JFrame {
                 thread.interrupt();
             }
         });
-
+        checkBoxN = new JCheckBox("Neutral");
+        checkBoxN.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                if (checkBoxN.isSelected())
+                    states.add(State.NEUTRAL);
+                else
+                    states.remove(State.NEUTRAL);
+            }
+        });
+        checkBoxA = new JCheckBox("Angry");
+        checkBoxA.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                if (checkBoxA.isSelected())
+                    states.add(State.ANGRY);
+                else
+                    states.remove(State.ANGRY);
+            }
+        });
+        checkBoxI = new JCheckBox("Interested");
+        checkBoxI.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                if (checkBoxI.isSelected())
+                    states.add(State.INTERESTED);
+                else
+                    states.remove(State.INTERESTED);
+            }
+        });
+        checkBoxB = new JCheckBox("Bored");
+        checkBoxB.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                if (checkBoxB.isSelected())
+                    states.add(State.BORED);
+                else
+                    states.remove(State.BORED);
+            }
+        });
     }
 
     private int makeBrighter(){
         int r;
         int g;
         int b;
+        boolean flag = false;
         int i = 0;
-        for (Person person: app.collec) {
+        for (Person person: persons) {
             r = person.getColor().getRed();
             g = person.getColor().getGreen();
             b = person.getColor().getBlue();
@@ -229,7 +295,7 @@ public class MainPanel extends JFrame {
         int final_g;
         int final_b;
         int i = 0;
-        for (Person person: app.collec) {
+        for (Person person: persons) {
             final_r = person.getState().getColor().getRed();
             final_g = person.getState().getColor().getGreen();
             final_b = person.getState().getColor().getBlue();
