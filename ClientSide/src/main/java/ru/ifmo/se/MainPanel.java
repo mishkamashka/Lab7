@@ -158,32 +158,25 @@ public class MainPanel extends JFrame {
         repaintButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                ReentrantLock lock = new ReentrantLock();
                 new Thread(() -> {
-                    lock.lock();
                     int i = 0;
                     while (i < app.collec.size()*3) {
                         i = makeBrighter();
                         try {
-                            Thread.sleep(10);
+                            Thread.sleep(5000/255);
                         } catch (InterruptedException ee) {
                             ee.printStackTrace();
                         }
                     }
-                    lock.unlock();
-                }).start();
-                new Thread(() -> {
-                    lock.lock();
-                    int i = 0;
+                    i = 0;
                     while (i < app.collec.size()*3) {
                         i = makeDarker();
                         try {
-                            Thread.sleep(10);
+                            Thread.sleep(5000/255);
                         } catch (InterruptedException ee) {
                             ee.printStackTrace();
                         }
                     }
-                    lock.unlock();
                 }).start();
             }
         });
