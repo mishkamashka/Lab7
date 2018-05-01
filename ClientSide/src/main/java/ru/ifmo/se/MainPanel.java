@@ -157,8 +157,100 @@ public class MainPanel extends JFrame {
         repaintButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                graphPanel.repaint();
+                // change only colors from chosen persons, all ellipses will be redrawn
+
+                for (int i = 0; i < 255; i++){
+                    makeBrighter();
+                    try{
+                        Thread.sleep(10);
+                    }catch (InterruptedException ee){
+                        ee.printStackTrace();
+                    }
+                }
+
+                /*int i;
+                while (true){
+                    i = makeBrighter();
+                    try{
+                        Thread.sleep(100);
+                    }catch (InterruptedException ee){
+                        ee.printStackTrace();
+                    }
+                }*/
+
+               /* makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();
+                makeBrighter();*/
+
+
+
+                //while (i != app.collec.size()*3){
             }
         });
+    }
+
+    public int makeBrighter(){
+        int r;
+        int g;
+        int b;
+        int i = 0;
+        for (Person person: app.collec) {
+            r = person.getColor().getRed();
+            g = person.getColor().getGreen();
+            b = person.getColor().getBlue();
+            if (r < 255)
+                r++;
+            else i++;
+            if (g < 255)
+                g++;
+            else i++;
+            if (b < 255)
+                b++;
+            else i++;
+            person.setColor(new Color(r,g,b));
+        }
+        graphPanel.repaint();
+        return i;
     }
 }

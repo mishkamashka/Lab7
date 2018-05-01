@@ -4,6 +4,7 @@ import ru.ifmo.se.enums.State;
 import ru.ifmo.se.exceptions.NotEnoughMoneyException;
 import ru.ifmo.se.exceptions.TooMuchMoneyException;
 
+import java.awt.*;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +21,7 @@ public abstract class Person implements Serializable, Comparable {
     private List<Shoes> shoes = new ArrayList<>();
     private List<Accessories> accessories = new ArrayList<>();
     private State state;
+    private Color color;
 
     public Person(String name) {
         this.name = name;
@@ -47,6 +49,14 @@ public abstract class Person implements Serializable, Comparable {
         return name;
     }
 
+    public Color getColor() {
+        return color;
+    }
+
+    public void setColor(Color color) {
+        this.color = color;
+    }
+
     public void setState() {
         switch ((int) (Math.random()*10)) {
             case 0:
@@ -69,6 +79,7 @@ public abstract class Person implements Serializable, Comparable {
             default:
                 this.state = State.ANGRY;
         }
+        color = state.getColor();
     }
 
     public State getState() {

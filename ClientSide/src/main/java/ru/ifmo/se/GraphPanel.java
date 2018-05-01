@@ -4,8 +4,6 @@ import ru.ifmo.se.enums.State;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.geom.Ellipse2D;
 import java.util.Map;
 import java.util.TreeMap;
@@ -18,7 +16,6 @@ public class GraphPanel extends JPanel {
         this.app = app;
 
         setBackground(Color.WHITE);
-        //repaint();
     }
 
     public void paint(Graphics gr){
@@ -29,16 +26,9 @@ public class GraphPanel extends JPanel {
         for (Person person: app.collec){
             ellipse2D = new Ellipse2D.Double(person.getX(), person.getY(),40,20);
 
-            State state = person.getState();
-            Color color = state.getColor();
-            g.setColor(color);
+            g.setColor(person.getColor());
             g.draw(ellipse2D);
             ellipsMap.put(person, ellipse2D);
         }
     }
-
-    public void startMoving(){
-
-    }
-
 }
