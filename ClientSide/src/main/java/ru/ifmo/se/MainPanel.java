@@ -22,7 +22,8 @@ public class MainPanel extends JFrame {
     JTree jTree;
     JButton addButton;
     JButton remButton;
-    JButton repaintButton;
+    JButton startButton;
+    JButton stopButton;
     JPanel jPanel;
     Container container;
     DefaultTreeModel model;
@@ -30,6 +31,7 @@ public class MainPanel extends JFrame {
     GroupLayout groupLayout;
     ClientApp app;
     GraphPanel graphPanel;
+    Thread thread;
 
 
     public MainPanel() {
@@ -61,26 +63,30 @@ public class MainPanel extends JFrame {
                 groupLayout.createParallelGroup()
                         .addComponent(jTree).addGap(100)
                         .addGroup(groupLayout.createSequentialGroup()
-                        .addComponent(label).addGap(10)
-                        .addComponent(textField).addGap(10)
-                        .addGroup(groupLayout.createParallelGroup(GroupLayout.Alignment.TRAILING)
+                            .addComponent(label).addGap(10)
+                            .addComponent(textField).addGap(10)
+                            .addGroup(groupLayout.createParallelGroup(GroupLayout.Alignment.TRAILING)
                                 .addComponent(addButton).addGap(10)
                                 .addComponent(remButton)).addGap(10)
-                        .addComponent(resLabel))
-                        .addComponent(repaintButton).addGap(10)
-                        .addComponent(graphPanel, 300,500,500));
+                            .addComponent(resLabel))
+                        .addGroup(groupLayout.createSequentialGroup()
+                            .addComponent(startButton).addGap(10)
+                            .addComponent(stopButton)).addGap(10)
+                            .addComponent(graphPanel, 300,500,500));
         groupLayout.setHorizontalGroup(
                 groupLayout.createSequentialGroup()
                         .addComponent(jTree).addGap(100)
                         .addGroup(groupLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                        .addComponent(label).addGap(10)
-                        .addComponent(textField).addGap(10)
-                        .addGroup(groupLayout.createSequentialGroup()
+                            .addComponent(label).addGap(10)
+                            .addComponent(textField).addGap(10)
+                            .addGroup(groupLayout.createSequentialGroup()
                                 .addComponent(addButton).addGap(10)
                                 .addComponent(remButton)).addGap(10)
-                        .addComponent(resLabel)).addGap(50)
-                        .addComponent(repaintButton).addGap(10)
-                        .addComponent(graphPanel, 300, 500, 500));
+                                .addComponent(resLabel)).addGap(50)
+                            .addGroup(groupLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
+                                .addComponent(startButton).addGap(10)
+                                .addComponent(stopButton)).addGap(10)
+                            .addComponent(graphPanel, 300, 500, 500));
         model.reload();
         groupLayout.linkSize(textField);
         jPanel.setLayout(groupLayout);
@@ -154,18 +160,18 @@ public class MainPanel extends JFrame {
                 updateTree();
             }
         });
-        repaintButton = new JButton("Start");
-        repaintButton.addActionListener(new ActionListener() {
+        startButton = new JButton("Start");
+        startButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                new Thread(() -> {
+                thread = new Thread(() -> {
                     int i = 0;
                     while (i < app.collec.size()*3) {
                         i = makeBrighter();
                         try {
                             Thread.sleep(5000/255);
                         } catch (InterruptedException ee) {
-                            ee.printStackTrace();
+                            return;
                         }
                     }
                     i = 0;
@@ -174,12 +180,21 @@ public class MainPanel extends JFrame {
                         try {
                             Thread.sleep(5000/255);
                         } catch (InterruptedException ee) {
-                            ee.printStackTrace();
+                            return;
                         }
                     }
-                }).start();
+                });
+                thread.start();
             }
         });
+        stopButton = new JButton("Stop");
+        stopButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                thread.interrupt();
+            }
+        });
+
     }
 
     private int makeBrighter(){
