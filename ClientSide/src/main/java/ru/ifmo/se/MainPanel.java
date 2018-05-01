@@ -10,6 +10,7 @@ import java.awt.event.ActionListener;
 import java.awt.geom.Ellipse2D;
 import java.io.IOException;
 import java.nio.ByteOrder;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class MainPanel extends JFrame {
     JMenu menu;
@@ -153,84 +154,42 @@ public class MainPanel extends JFrame {
                 updateTree();
             }
         });
-        repaintButton = new JButton("Repaint");
+        repaintButton = new JButton("Start");
         repaintButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // change only colors from chosen persons, all ellipses will be redrawn
-
-                for (int i = 0; i < 255; i++){
-                    makeBrighter();
-                    try{
-                        Thread.sleep(10);
-                    }catch (InterruptedException ee){
-                        ee.printStackTrace();
+                ReentrantLock lock = new ReentrantLock();
+                new Thread(() -> {
+                    lock.lock();
+                    int i = 0;
+                    while (i < app.collec.size()*3) {
+                        i = makeBrighter();
+                        try {
+                            Thread.sleep(10);
+                        } catch (InterruptedException ee) {
+                            ee.printStackTrace();
+                        }
                     }
-                }
-
-                /*int i;
-                while (true){
-                    i = makeBrighter();
-                    try{
-                        Thread.sleep(100);
-                    }catch (InterruptedException ee){
-                        ee.printStackTrace();
+                    lock.unlock();
+                }).start();
+                new Thread(() -> {
+                    lock.lock();
+                    int i = 0;
+                    while (i < app.collec.size()*3) {
+                        i = makeDarker();
+                        try {
+                            Thread.sleep(10);
+                        } catch (InterruptedException ee) {
+                            ee.printStackTrace();
+                        }
                     }
-                }*/
-
-               /* makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();
-                makeBrighter();*/
-
-
-
-                //while (i != app.collec.size()*3){
+                    lock.unlock();
+                }).start();
             }
         });
     }
 
-    public int makeBrighter(){
+    private int makeBrighter(){
         int r;
         int g;
         int b;
@@ -247,6 +206,36 @@ public class MainPanel extends JFrame {
             else i++;
             if (b < 255)
                 b++;
+            else i++;
+            person.setColor(new Color(r,g,b));
+        }
+        graphPanel.repaint();
+        return i;
+    }
+
+    private int makeDarker(){
+        int r;
+        int g;
+        int b;
+        int final_r;
+        int final_g;
+        int final_b;
+        int i = 0;
+        for (Person person: app.collec) {
+            final_r = person.getState().getColor().getRed();
+            final_g = person.getState().getColor().getGreen();
+            final_b = person.getState().getColor().getBlue();
+            r = person.getColor().getRed();
+            g = person.getColor().getGreen();
+            b = person.getColor().getBlue();
+            if (r > final_r)
+                r--;
+            else i++;
+            if (g > final_g)
+                g--;
+            else i++;
+            if (b > final_b)
+                b--;
             else i++;
             person.setColor(new Color(r,g,b));
         }
