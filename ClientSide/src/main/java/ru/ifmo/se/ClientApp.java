@@ -222,9 +222,13 @@ public class ClientApp {
 
     public String addObject(String data) {
         try {
-            if ((JsonConverter.jsonToObject(data, Known.class).getName() != null)) {
-                if (this.collec.add(JsonConverter.jsonToObject(data, Known.class))) {
-                    System.out.println("Current collection has been updated by server.");
+            Person person = JsonConverter.jsonToObject(data, Known.class);
+            person.setState();
+            person.getSteps_from_door();
+            person.set_X_Y();
+            if (person.getName() != null) {
+                if (this.collec.add(person)) {
+                    System.out.println("Current collection has been updated by client.");
                     return ("Object " + JsonConverter.jsonToObject(data, Known.class).toString() + " has been added.");
                 } else{
                     return ("This object is already in the collection.");

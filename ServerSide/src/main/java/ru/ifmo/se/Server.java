@@ -146,7 +146,11 @@ class Connection extends Thread {
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject jsonObject = jsonArray.getJSONObject(i);
                     String jsonObjectAsString = jsonObject.toString();
-                    Server.collec.add(JsonConverter.jsonToObject(jsonObjectAsString, Known.class));
+                    Person person = JsonConverter.jsonToObject(jsonObjectAsString, Known.class);
+                    person.getSteps_from_door(); //so they are not 0 (just needed to be so)
+                    person.setState(); // erh.. the same stuff
+                    person.set_X_Y();
+                    Server.collec.add(person);
                 }
                 System.out.println("Connection has been loaded.");
             } catch (NullPointerException e) {
@@ -270,11 +274,15 @@ class Connection extends Thread {
     public static String addObject(String data) {
         locker.lock();
         try {
-            if ((JsonConverter.jsonToObject(data, Known.class).getName() != null)) {
-                if (Server.collec.add(JsonConverter.jsonToObject(data, Known.class))) {
+            Person person = JsonConverter.jsonToObject(data, Known.class);
+            person.setState();
+            person.getSteps_from_door();
+            person.set_X_Y();
+            if (person.getName() != null) {
+                if (Server.collec.add(person)) {
                     System.out.println("Current collection has been updated by server.");
                     locker.unlock();
-                    return ("Object " + JsonConverter.jsonToObject(data, Known.class).toString() + " has been added.");
+                    return ("Object " + person.toString() + " has been added.");
                 } else{
                     locker.unlock();
                     return ("This object is already in the collection.");

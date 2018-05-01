@@ -12,7 +12,9 @@ public abstract class Person implements Serializable, Comparable {
     private String name;
     private String last_name;
     private int age;
-    private int steps_from_door = 0;
+    private int steps_from_door = (int) (Math.random()*100);
+    private int x;
+    private int y;
 
     private List<GeneralClothes> generalClothes = new ArrayList<>();
     private List<Shoes> shoes = new ArrayList<>();
@@ -21,27 +23,52 @@ public abstract class Person implements Serializable, Comparable {
 
     public Person(String name) {
         this.name = name;
-        this.state = State.NEUTRAL;
+        this.setState();
+        getSteps_from_door();
+        set_X_Y();
     }
 
     public Person() {
         name = "Stranger";
-        this.state = State.NEUTRAL;
+        this.setState();
+        getSteps_from_door();
+        set_X_Y();
     }
 
     public Person(String name, String last_name) {
         this.name = name;
         this.last_name = last_name;
+        this.setState();
+        getSteps_from_door();
+        set_X_Y();
     }
 
     public String getName() {
         return name;
     }
 
-    public void setState(State state) {
-        if (state == null)
-            return;
-        this.state = state;
+    public void setState() {
+        switch ((int) (Math.random()*10)) {
+            case 0:
+            case 1:
+            case 2:
+                this.state = State.NEUTRAL;
+                break;
+            case 3:
+            case 4:
+            case 5:
+                this.state = State.INTERESTED;
+                break;
+            case 6:
+            case 7:
+            case 8:
+                this.state = State.BORED;
+                break;
+            case 9:
+            case 10:
+            default:
+                this.state = State.ANGRY;
+        }
     }
 
     public State getState() {
@@ -71,6 +98,25 @@ public abstract class Person implements Serializable, Comparable {
             if (i++ < clothes.size())
                 System.out.print(", ");
         }
+    }
+
+    public int getSteps_from_door() {
+        if (steps_from_door == 0)
+            steps_from_door = (int) (Math.random()*100);
+        return steps_from_door;
+    }
+
+    public void set_X_Y(){
+        x = (int)(Math.random()*100+Math.random()*50);
+        y = (int) Math.sqrt(Math.abs(steps_from_door*steps_from_door- x*x));
+    }
+
+    public int getX() {
+        return x;
+    }
+
+    public int getY() {
+        return y;
     }
 
     public String getClothes(List<? extends Clothes> clothes) {

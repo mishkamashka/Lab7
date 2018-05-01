@@ -1,6 +1,7 @@
 package ru.ifmo.se;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
@@ -8,6 +9,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.Ellipse2D;
 import java.io.IOException;
+import java.nio.ByteOrder;
 
 public class MainPanel extends JFrame {
     JMenu menu;
@@ -26,14 +28,15 @@ public class MainPanel extends JFrame {
     DefaultMutableTreeNode root;
     GroupLayout groupLayout;
     ClientApp app;
+    GraphPanel graphPanel;
 
 
     public MainPanel() {
         app = new ClientApp();
 
-
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setTitle("Lab 7. ClientSide");
+        setResizable(false);
         createMenu();
         container = getContentPane();
         jPanel = new JPanel();
@@ -48,6 +51,9 @@ public class MainPanel extends JFrame {
         app.load();
         updateTree();
 
+        graphPanel = new GraphPanel(app);
+        //container.add(graphPanel);
+
         model = (DefaultTreeModel) jTree.getModel();
         createOptions();
         groupLayout.setVerticalGroup(
@@ -60,7 +66,8 @@ public class MainPanel extends JFrame {
                                 .addComponent(addButton).addGap(10)
                                 .addComponent(remButton)).addGap(10)
                         .addComponent(resLabel))
-                        .addComponent(repaintButton));
+                        .addComponent(repaintButton).addGap(10)
+                        .addComponent(graphPanel, 300,500,500));
         groupLayout.setHorizontalGroup(
                 groupLayout.createSequentialGroup()
                         .addComponent(jTree).addGap(100)
@@ -70,9 +77,9 @@ public class MainPanel extends JFrame {
                         .addGroup(groupLayout.createSequentialGroup()
                                 .addComponent(addButton).addGap(10)
                                 .addComponent(remButton)).addGap(10)
-                        .addComponent(resLabel))
-                        .addComponent(repaintButton));
-
+                        .addComponent(resLabel)).addGap(50)
+                        .addComponent(repaintButton).addGap(10)
+                        .addComponent(graphPanel, 300, 500, 500));
         model.reload();
         groupLayout.linkSize(textField);
         jPanel.setLayout(groupLayout);
@@ -150,7 +157,7 @@ public class MainPanel extends JFrame {
         repaintButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
+                graphPanel.repaint();
             }
         });
     }

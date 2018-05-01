@@ -1,18 +1,44 @@
 package ru.ifmo.se;
 
+import ru.ifmo.se.enums.State;
+
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.geom.Ellipse2D;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class GraphPanel extends JPanel {
-    JButton button;
-    Set<Ellipse2D> ellipsSet = new TreeSet<>();
+    ClientApp app;
+    Map<Person, Ellipse2D> ellipsMap = new TreeMap<>();
 
     public GraphPanel(ClientApp app){
-        //Graphics2D graphics = new G
-        Ellipse2D ellipse2D = new Ellipse2D.Float(1,2,3,4);
-        //app.collec.forEach(person -> );
+        this.app = app;
+
+        setBackground(Color.WHITE);
+        //repaint();
     }
+
+    public void paint(Graphics gr){
+        super.paintComponent(gr);
+        Graphics2D g = (Graphics2D) gr;
+        setSize(1000,1000);
+        Ellipse2D ellipse2D;
+        for (Person person: app.collec){
+            ellipse2D = new Ellipse2D.Double(person.getX(), person.getY(),40,20);
+
+            State state = person.getState();
+            Color color = state.getColor();
+            g.setColor(color);
+            g.draw(ellipse2D);
+            ellipsMap.put(person, ellipse2D);
+        }
+    }
+
+    public void startMoving(){
+
+    }
+
 }
