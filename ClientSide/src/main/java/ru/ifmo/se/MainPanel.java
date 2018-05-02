@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 import java.text.NumberFormat;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -66,7 +67,7 @@ public class MainPanel extends JFrame {
         root = new DefaultMutableTreeNode("People");
         jTree = new JTree(root);
         app.connect();
-        while (!isAuthorized){
+        while (!isAuthorized) {
         }
         ClientApp.toServer.println("data_request");
         app.clear();
@@ -77,10 +78,22 @@ public class MainPanel extends JFrame {
         graphPanel.addMouseListener(new MouseListener() {
                                         @Override
                                         public void mouseClicked(MouseEvent e) {
+                                            int x = e.getX();
+                                            int y = e.getY();
+                                            int personX;
+                                            int personY;
+                                            Person person;
+                                            for (Map.Entry<Person, Ellipse2D> entry: graphPanel.ellipsMap.entrySet()){
+                                                personX = entry.getKey().getX();
+                                                personY = entry.getKey().getY();
+                                                if ((personX <= x && x <= (personX + 40))&&(personY <= y && y <=(personY + 20)))
+                                                    graphPanel.setToolTipText(entry.getKey().toString());
+                                            }
                                         }
 
                                         @Override
                                         public void mousePressed(MouseEvent e) {
+
                                         }
 
                                         @Override
@@ -90,9 +103,7 @@ public class MainPanel extends JFrame {
 
                                         @Override
                                         public void mouseEntered(MouseEvent e) {
-                                            int x = e.getX();
-                                            int y = e.getY();
-                                            graphPanel.setToolTipText("mmmm");
+
                                         }
 
                                         @Override
@@ -301,7 +312,7 @@ public class MainPanel extends JFrame {
             }
         });
         ageLabel = new JLabel("Minimum age:");
-        slider = new JSlider(0,120,20);
+        slider = new JSlider(0,120,25);
         slider.setPaintLabels(true);
         slider.setMajorTickSpacing(25);
         slider.addChangeListener(new ChangeListener() {

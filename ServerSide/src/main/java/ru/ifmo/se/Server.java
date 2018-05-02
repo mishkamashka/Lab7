@@ -169,7 +169,7 @@ class Connection extends Thread {
                     person.set_X_Y();
                     Server.collec.add(person);
                 }
-                System.out.println("Connection has been loaded.");
+                System.out.println("Collection has been loaded.");
             } catch (NullPointerException e) {
                 System.out.println("File is empty.");
             }
