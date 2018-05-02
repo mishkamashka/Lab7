@@ -39,7 +39,7 @@ public class AuthPanel extends JFrame {
         textField.addKeyListener(new KeyListener() {
             @Override
             public void keyTyped(KeyEvent e) {
-                
+
             }
 
             @Override

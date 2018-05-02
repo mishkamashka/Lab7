@@ -4,13 +4,16 @@ import ru.ifmo.se.enums.State;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.geom.Ellipse2D;
 import java.util.Map;
 import java.util.TreeMap;
 
-public class GraphPanel extends JPanel {
+public class GraphPanel extends JPanel implements MouseListener{
     ClientApp app;
     Map<Person, Ellipse2D> ellipsMap = new TreeMap<>();
+    Graphics2D g;
 
     public GraphPanel(ClientApp app){
         this.app = app;
@@ -20,7 +23,7 @@ public class GraphPanel extends JPanel {
 
     public void paint(Graphics gr){
         super.paintComponent(gr);
-        Graphics2D g = (Graphics2D) gr;
+        g = (Graphics2D) gr;
         setSize(1000,1000);
         Ellipse2D ellipse2D;
         for (Person person: app.collec){
@@ -30,5 +33,39 @@ public class GraphPanel extends JPanel {
             g.draw(ellipse2D);
             ellipsMap.put(person, ellipse2D);
         }
+    }
+
+    @Override
+    public void mouseClicked(MouseEvent e) {
+        new Thread(() -> {
+            g.setRenderingHints(ellipsMap);
+            System.out.println("whatever");
+        }).start();
+    }
+
+    @Override
+    public void mousePressed(MouseEvent e) {
+
+    }
+
+    @Override
+    public void mouseReleased(MouseEvent e) {
+
+    }
+
+    @Override
+    public void mouseEntered(MouseEvent e) {
+        int x = e.getX();
+        int y = e.getY();
+        JLabel label = new JLabel();
+        /*for (Map.Entry<Person, Ellipse2D> entry: ellipsMap.entrySet()){
+            person = entry.getKey();
+            //if
+        }*/
+    }
+
+    @Override
+    public void mouseExited(MouseEvent e) {
+
     }
 }

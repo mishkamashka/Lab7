@@ -9,8 +9,7 @@ import javax.swing.event.ChangeListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 import java.awt.geom.Ellipse2D;
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -75,6 +74,32 @@ public class MainPanel extends JFrame {
         updateTree();
 
         graphPanel = new GraphPanel(app);
+        graphPanel.addMouseListener(new MouseListener() {
+                                        @Override
+                                        public void mouseClicked(MouseEvent e) {
+                                        }
+
+                                        @Override
+                                        public void mousePressed(MouseEvent e) {
+                                        }
+
+                                        @Override
+                                        public void mouseReleased(MouseEvent e) {
+
+                                        }
+
+                                        @Override
+                                        public void mouseEntered(MouseEvent e) {
+                                            int x = e.getX();
+                                            int y = e.getY();
+                                            graphPanel.setToolTipText("mmmm");
+                                        }
+
+                                        @Override
+                                        public void mouseExited(MouseEvent e) {
+
+                                        }
+                                    });
         model = (DefaultTreeModel) jTree.getModel();
         createOptions();
         groupLayout.setVerticalGroup(
