@@ -14,6 +14,7 @@ import java.awt.event.ActionListener;
 import java.awt.geom.Ellipse2D;
 import java.io.IOException;
 import java.nio.ByteOrder;
+import java.text.NumberFormat;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
@@ -25,7 +26,9 @@ public class MainPanel extends JFrame {
     JLabel label;
     JLabel resLabel;
     JLabel ageLabel;
+    JLabel distLabel;
     JTextField textField;
+    JFormattedTextField formattedTextField;
     JTree jTree;
     JButton addButton;
     JButton remButton;
@@ -47,6 +50,7 @@ public class MainPanel extends JFrame {
     Set<State> states = new HashSet<>();
     volatile Set<Person> persons = new HashSet<>();
     int age;
+    long distance;
 
     public MainPanel() {
         app = new ClientApp();
@@ -91,7 +95,9 @@ public class MainPanel extends JFrame {
                             .addComponent(checkBoxB).addGap(5)
                             .addComponent(checkBoxI).addGap(10)
                             .addComponent(ageLabel).addGap(10)
-                            .addComponent(slider)).addGap(10)
+                            .addComponent(slider).addGap(10)
+                            .addComponent(distLabel).addGap(10)
+                            .addComponent(formattedTextField,20,20,20)).addGap(10)
                             .addComponent(graphPanel, 300,500,500));
         groupLayout.setHorizontalGroup(
                 groupLayout.createSequentialGroup()
@@ -111,7 +117,9 @@ public class MainPanel extends JFrame {
                                 .addComponent(checkBoxB).addGap(10)
                                 .addComponent(checkBoxI).addGap(10)
                                 .addComponent(ageLabel).addGap(10)
-                                .addComponent(slider)).addGap(10)
+                                .addComponent(slider).addGap(10)
+                                .addComponent(distLabel).addGap(10)
+                                .addComponent(formattedTextField, 100,120,120)).addGap(10)
                             .addComponent(graphPanel, 300, 500, 500));
         model.reload();
         groupLayout.linkSize(textField);
@@ -191,10 +199,13 @@ public class MainPanel extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 thread = new Thread(() -> {
+                    if (formattedTextField.getValue() != null)
+                        distance = (Long) formattedTextField.getValue();
+                    else distance = 20000;
                     int i = 0;
                     app.collec.forEach(person -> {
                         for (State state: states){
-                            if (person.getState().equals(state) && (person.getAge() >= age))
+                            if (person.getState().equals(state) && (person.getAge() >= age) && (person.getSteps_from_door() <= distance))
                                 persons.add(person);
                         }
                     });
@@ -277,6 +288,8 @@ public class MainPanel extends JFrame {
                 age = slider.getValue();
             }
         });
+        distLabel = new JLabel("Maximum distance(int):");
+        formattedTextField = new JFormattedTextField(NumberFormat.getIntegerInstance());
     }
 
     private int makeBrighter(){
