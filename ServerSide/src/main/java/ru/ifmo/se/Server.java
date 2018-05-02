@@ -45,6 +45,8 @@ class Connection extends Thread {
     private static String filepath;
     private static File file;
     private static ReentrantLock locker = new ReentrantLock();
+    private boolean isAuthorized;
+    private String password = "password";
 
     Connection(Socket client){
         Connection.filemaker();
@@ -79,7 +81,22 @@ class Connection extends Thread {
             System.out.println("Exception while trying to load collection.\n" + e.toString());
         }
         System.out.println("Client " + client.toString() + " has connected to server.");
-        toClient.println("You've connected to the server.\n");
+        try {
+            while (!isAuthorized) {
+                String password = fromClient.readLine();
+                if (password.equals(this.password)){
+                    toClient.println("You've connected to the server.\n");
+                    isAuthorized = true;
+                }
+                else
+                    toClient.println("Wrong password. Try again\n");
+            }
+        } catch (IOException e){
+            System.out.println("Client " + client.toString() + " has disconnected.");
+            //e.printStackTrace();
+        }
+        System.out.println("Client " + client.toString() + " has authorized.");
+
         while(true) {
             try {
                 String command = fromClient.readLine();

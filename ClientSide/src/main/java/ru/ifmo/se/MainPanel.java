@@ -51,6 +51,7 @@ public class MainPanel extends JFrame {
     volatile Set<Person> persons = new HashSet<>();
     int age;
     long distance;
+    volatile static boolean isAuthorized = false;
 
     public MainPanel() {
         app = new ClientApp();
@@ -62,19 +63,18 @@ public class MainPanel extends JFrame {
         container = getContentPane();
         jPanel = new JPanel();
         groupLayout = new GroupLayout(jPanel);
-        groupLayout.getAutoCreateGaps();
         container.add(jPanel);
         root = new DefaultMutableTreeNode("People");
         jTree = new JTree(root);
         app.connect();
+        while (!isAuthorized){
+        }
         ClientApp.toServer.println("data_request");
         app.clear();
         app.load();
         updateTree();
 
         graphPanel = new GraphPanel(app);
-        //container.add(graphPanel);
-
         model = (DefaultTreeModel) jTree.getModel();
         createOptions();
         groupLayout.setVerticalGroup(
@@ -124,9 +124,6 @@ public class MainPanel extends JFrame {
         model.reload();
         groupLayout.linkSize(textField);
         jPanel.setLayout(groupLayout);
-
-        //adding graph-thing
-
         pack();
         setVisible(true);
     }

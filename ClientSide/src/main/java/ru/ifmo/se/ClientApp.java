@@ -122,8 +122,8 @@ public class ClientApp {
             System.out.println("Can not create DataInput or DataOutput stream.");
             e.printStackTrace();
         }
+        AuthPanel authPanel = new AuthPanel(this);
         locker.unlock();
-        System.out.println(this.gettingResponse());
     }
 
     public void load(){
@@ -209,6 +209,7 @@ public class ClientApp {
             return temp.toString();
         } catch (IOException e){
             temp.append("The connection was lost.\nTrying to reconnect...");
+            MainPanel.isAuthorized = false;
             this.connect();
             return temp.toString();
         }
