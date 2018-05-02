@@ -24,6 +24,7 @@ public class MainPanel extends JFrame {
     JMenuItem jMenuItem;
     JLabel label;
     JLabel resLabel;
+    JLabel ageLabel;
     JTextField textField;
     JTree jTree;
     JButton addButton;
@@ -34,6 +35,7 @@ public class MainPanel extends JFrame {
     JCheckBox checkBoxA;
     JCheckBox checkBoxI;
     JCheckBox checkBoxB;
+    JSlider slider;
     JPanel jPanel;
     Container container;
     DefaultTreeModel model;
@@ -44,6 +46,7 @@ public class MainPanel extends JFrame {
     Thread thread;
     Set<State> states = new HashSet<>();
     volatile Set<Person> persons = new HashSet<>();
+    int age;
 
     public MainPanel() {
         app = new ClientApp();
@@ -86,7 +89,9 @@ public class MainPanel extends JFrame {
                             .addComponent(checkBoxN).addGap(5)
                             .addComponent(checkBoxA).addGap(5)
                             .addComponent(checkBoxB).addGap(5)
-                            .addComponent(checkBoxI)).addGap(10)
+                            .addComponent(checkBoxI).addGap(10)
+                            .addComponent(ageLabel).addGap(10)
+                            .addComponent(slider)).addGap(10)
                             .addComponent(graphPanel, 300,500,500));
         groupLayout.setHorizontalGroup(
                 groupLayout.createSequentialGroup()
@@ -104,7 +109,9 @@ public class MainPanel extends JFrame {
                                 .addComponent(checkBoxN).addGap(10)
                                 .addComponent(checkBoxA).addGap(10)
                                 .addComponent(checkBoxB).addGap(10)
-                                .addComponent(checkBoxI)).addGap(10)
+                                .addComponent(checkBoxI).addGap(10)
+                                .addComponent(ageLabel).addGap(10)
+                                .addComponent(slider)).addGap(10)
                             .addComponent(graphPanel, 300, 500, 500));
         model.reload();
         groupLayout.linkSize(textField);
@@ -187,7 +194,7 @@ public class MainPanel extends JFrame {
                     int i = 0;
                     app.collec.forEach(person -> {
                         for (State state: states){
-                            if (person.getState().equals(state))
+                            if (person.getState().equals(state) && (person.getAge() >= age))
                                 persons.add(person);
                         }
                     });
@@ -260,13 +267,22 @@ public class MainPanel extends JFrame {
                     states.remove(State.BORED);
             }
         });
+        ageLabel = new JLabel("Minimum age:");
+        slider = new JSlider(0,120,20);
+        slider.setPaintLabels(true);
+        slider.setMajorTickSpacing(25);
+        slider.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                age = slider.getValue();
+            }
+        });
     }
 
     private int makeBrighter(){
         int r;
         int g;
         int b;
-        boolean flag = false;
         int i = 0;
         for (Person person: persons) {
             r = person.getColor().getRed();
