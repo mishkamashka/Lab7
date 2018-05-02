@@ -5,6 +5,7 @@ import com.google.gson.JsonSyntaxException;
 import javax.xml.crypto.Data;
 import java.io.*;
 import java.net.*;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Scanner;
 import java.util.Set;
@@ -92,11 +93,12 @@ public class ClientApp {
 
     public void connect(){
         locker.lock();
+        AuthPanel authPanel = new AuthPanel(this);
         try {
             clientSocket = new InetSocketAddress(InetAddress.getByName("localhost"), 4718);
             channel = SocketChannel.open(clientSocket);
         } catch (IOException e){
-            //e.printStackTrace();
+            channel = null;
         }
         int i = 0;
         while (channel == null) {
@@ -105,10 +107,16 @@ public class ClientApp {
                 channel = SocketChannel.open(clientSocket);
             } catch (IOException e) {
                 if (i++ == 3){
-                    System.out.println("Server is not responding for a long time...");
+                    authPanel.setLabel("Server is not responding for a long time...");
                 }
                 if (i == 10){
-                    System.out.println("Server did not respond for too long. Try again later.");
+                    authPanel.setLabel("Server did not respond for too long. Try again later.");
+                    try{
+                        Thread.sleep(3000);
+                    }catch (InterruptedException e1)
+                    {
+                        e1.printStackTrace();
+                    }
                     System.exit(0);
                 }
             } catch (InterruptedException e) {
@@ -122,7 +130,6 @@ public class ClientApp {
             System.out.println("Can not create DataInput or DataOutput stream.");
             e.printStackTrace();
         }
-        AuthPanel authPanel = new AuthPanel(this);
         locker.unlock();
     }
 
@@ -133,6 +140,10 @@ public class ClientApp {
             fromServer = new ObjectInputStream(channel.socket().getInputStream());
         } catch (IOException e){
             System.out.println("Can not create ObjectInputStream: "+e.toString());
+            if (MainPanel.isAuthorized) {
+                MainPanel.isAuthorized = false;
+                this.connect();
+            }
             System.out.println("Just try again, that's pretty normal.");
             return;
         }
@@ -207,10 +218,14 @@ public class ClientApp {
             }
             System.out.println(temp.toString() + "\nEnd of getting from server.");
             return temp.toString();
+        } catch (NullPointerException ee){
+            return "Server is not responding...";
         } catch (IOException e){
             temp.append("The connection was lost.\nTrying to reconnect...");
-            MainPanel.isAuthorized = false;
-            this.connect();
+            if (MainPanel.isAuthorized) {
+                MainPanel.isAuthorized = false;
+                this.connect();
+            }
             return temp.toString();
         }
     }

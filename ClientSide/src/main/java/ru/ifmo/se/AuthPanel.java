@@ -22,7 +22,6 @@ public class AuthPanel extends JFrame {
 
     public AuthPanel(ClientApp app){
         super("Authorisation");
-        lock.lock();
         this.app = app;
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
@@ -33,7 +32,7 @@ public class AuthPanel extends JFrame {
         container.add(jPanel);
 
         label = new JLabel("Enter password:");
-        serverAnsw = new JLabel("You've connected to the server");
+        serverAnsw = new JLabel("Connecting to server...");
         textField = new JPasswordField();
         textField.setEchoChar('☀');
         textField.addKeyListener(new KeyListener() {
@@ -48,7 +47,11 @@ public class AuthPanel extends JFrame {
                     char[] chars;
                     chars = textField.getPassword();
                     String password = new String(chars);
-                    ClientApp.toServer.println(password);
+                    try{
+                        ClientApp.toServer.println(password);
+                    } catch (NullPointerException ee){
+
+                    }
                     String answer = app.gettingResponse();
                     if (answer.startsWith("You've")) {
                         setVisible(false);
@@ -95,7 +98,6 @@ public class AuthPanel extends JFrame {
         groupLayout.linkSize(textField);
         pack();
         setVisible(true);
-        lock.unlock();
     }
 
     public void group(){
@@ -114,6 +116,10 @@ public class AuthPanel extends JFrame {
                         .addGroup(groupLayout.createSequentialGroup()
                                 .addComponent(okButton).addGap(10)
                                 .addComponent(cancelButton)).addGap(10)
-                        .addComponent(serverAnsw));
+                        .addComponent(serverAnsw,200,250,300));
+    }
+
+    public void setLabel(String string){
+        serverAnsw.setText(string);
     }
 }
