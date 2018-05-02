@@ -74,43 +74,7 @@ public class MainPanel extends JFrame {
         app.load();
         updateTree();
 
-        graphPanel = new GraphPanel(app);
-        graphPanel.addMouseListener(new MouseListener() {
-                                        @Override
-                                        public void mouseClicked(MouseEvent e) {
-                                            int x = e.getX();
-                                            int y = e.getY();
-                                            int personX;
-                                            int personY;
-                                            Person person;
-                                            for (Map.Entry<Person, Ellipse2D> entry: graphPanel.ellipsMap.entrySet()){
-                                                personX = entry.getKey().getX();
-                                                personY = entry.getKey().getY();
-                                                if ((personX <= x && x <= (personX + 40))&&(personY <= y && y <=(personY + 20)))
-                                                    graphPanel.setToolTipText(entry.getKey().toString());
-                                            }
-                                        }
 
-                                        @Override
-                                        public void mousePressed(MouseEvent e) {
-
-                                        }
-
-                                        @Override
-                                        public void mouseReleased(MouseEvent e) {
-
-                                        }
-
-                                        @Override
-                                        public void mouseEntered(MouseEvent e) {
-
-                                        }
-
-                                        @Override
-                                        public void mouseExited(MouseEvent e) {
-
-                                        }
-                                    });
         model = (DefaultTreeModel) jTree.getModel();
         createOptions();
         groupLayout.setVerticalGroup(
@@ -134,7 +98,7 @@ public class MainPanel extends JFrame {
                             .addComponent(slider).addGap(10)
                             .addComponent(distLabel).addGap(10)
                             .addComponent(formattedTextField,20,20,20)).addGap(10)
-                            .addComponent(graphPanel, 300,500,500));
+                            .addComponent(graphPanel, 300,400,500));
         groupLayout.setHorizontalGroup(
                 groupLayout.createSequentialGroup()
                         .addComponent(jTree).addGap(100)
@@ -155,8 +119,8 @@ public class MainPanel extends JFrame {
                                 .addComponent(ageLabel).addGap(10)
                                 .addComponent(slider).addGap(10)
                                 .addComponent(distLabel).addGap(10)
-                                .addComponent(formattedTextField, 100,120,120)).addGap(10)
-                            .addComponent(graphPanel, 300, 500, 500));
+                                .addComponent(formattedTextField, 100,150,200)).addGap(10)
+                            .addComponent(graphPanel, 300, 400, 500));
         model.reload();
         groupLayout.linkSize(textField);
         jPanel.setLayout(groupLayout);
@@ -242,10 +206,11 @@ public class MainPanel extends JFrame {
                                 persons.add(person);
                         }
                     });
+                    int color = maxColor();
                     while (i < persons.size()*3) {
                         i = makeBrighter();
                         try {
-                            Thread.sleep(5000/255);
+                            Thread.sleep(5000/color);
                         } catch (InterruptedException ee) {
                             return;
                         }
@@ -254,7 +219,7 @@ public class MainPanel extends JFrame {
                     while (i < persons.size()*3) {
                         i = makeDarker();
                         try {
-                            Thread.sleep(5000/255);
+                            Thread.sleep(5000/color);
                         } catch (InterruptedException ee) {
                             return;
                         }
@@ -323,6 +288,43 @@ public class MainPanel extends JFrame {
         });
         distLabel = new JLabel("Maximum distance(int):");
         formattedTextField = new JFormattedTextField(NumberFormat.getIntegerInstance());
+        graphPanel = new GraphPanel(app);
+        graphPanel.addMouseListener(new MouseListener() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int x = e.getX();
+                int y = e.getY();
+                int personX;
+                int personY;
+                Person person;
+                for (Map.Entry<Person, Ellipse2D> entry: graphPanel.ellipsMap.entrySet()){
+                    personX = entry.getKey().getX();
+                    personY = entry.getKey().getY();
+                    if ((personX <= x && x <= (personX + 40))&&(personY <= y && y <=(personY + 20)))
+                        graphPanel.setToolTipText(entry.getKey().toString());
+                }
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+
+            }
+        });
     }
 
     private int makeBrighter(){
@@ -377,5 +379,26 @@ public class MainPanel extends JFrame {
         }
         graphPanel.repaint();
         return i;
+    }
+
+    private int maxColor(){
+        int max = 0;
+        int r;
+        int g;
+        int b;
+        for(Person person: persons){
+            r = person.getColor().getRed();
+            g = person.getColor().getGreen();
+            b = person.getColor().getBlue();
+            if (r > max)
+                max = r;
+            if (g > max)
+                max = g;
+            if (b > max)
+                max = b;
+            if (max == 255)
+                break;
+        }
+        return max;
     }
 }

@@ -75,7 +75,11 @@ public class AuthPanel extends JFrame {
                 char[] chars;
                 chars = textField.getPassword();
                 String password = new String(chars);
-                ClientApp.toServer.println(password);
+                try{
+                    ClientApp.toServer.println(password);
+                } catch (NullPointerException ee){
+
+                }
                 String answer = app.gettingResponse();
                 if (answer.startsWith("You've")) {
                     setVisible(false);

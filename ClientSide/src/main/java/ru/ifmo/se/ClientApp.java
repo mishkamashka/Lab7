@@ -130,6 +130,7 @@ public class ClientApp {
             System.out.println("Can not create DataInput or DataOutput stream.");
             e.printStackTrace();
         }
+        authPanel.setLabel("You've connected to server");
         locker.unlock();
     }
 
